@@ -491,10 +491,13 @@ EXAMPLES:
     ./cli/lab.sh --keep-state # Setup with persistent state file
 
 This script will:
-• Install development tools (grpcurl, grpcui, protoc)
+• Install development tools (grpcurl, grpcui, protoc, direnv)
 • Set up Docker network and Verdaccio registry
 • Validate Node.js environment and dependencies
+• Configure direnv for 'lab' command shortcut
 • Run environment smoke tests
+
+After setup, you can use 'lab' instead of './cli/lab.sh' (requires direnv).
 
 EOF
 }
@@ -1007,6 +1010,42 @@ validate_git() {
     log_success "Git repository detected"
 }
 
+# Validate and setup direnv environment
+validate_direnv() {
+    log_debug "Validating direnv environment..."
+    
+    # Check if direnv is installed
+    if ! command -v direnv &> /dev/null; then
+        log_warning "direnv is not installed but recommended for 'lab' command shortcut"
+        log_info "   This allows running 'lab --status' instead of './cli/lab.sh --status'"
+        
+        # On macOS, offer to install via brew
+        if [[ "$OSTYPE" == "darwin"* ]] && command -v brew &> /dev/null; then
+            log_info "   Install with: brew install direnv"
+            log_info "   Then add to your shell: echo 'eval \"\$(direnv hook bash)\"' >> ~/.bashrc"
+            log_info "   (or ~/.zshrc for zsh)"
+        else
+            log_info "   Install from: https://direnv.net/"
+        fi
+        return 0  # Non-critical
+    fi
+    
+    log_success "direnv is installed"
+    
+    # Check if .envrc exists and is allowed
+    if [ -f ".envrc" ]; then
+        if direnv status | grep -q "Found RC allowed true"; then
+            log_success ".envrc is properly configured - 'lab' command available"
+        else
+            log_warning ".envrc exists but not allowed"
+            log_info "   Run 'direnv allow' to enable the 'lab' command shortcut"
+        fi
+    else
+        log_warning ".envrc file missing"
+        log_info "   This should have been created automatically"
+    fi
+}
+
 # =============================================================================
 # MAIN SETUP EXECUTION WITH CHECKPOINTING
 # =============================================================================
@@ -1015,6 +1054,7 @@ validate_git() {
 run_step "VALIDATION_NODEJS" validate_nodejs
 run_step "VALIDATION_PORTS" check_port_conflicts  
 run_step "VALIDATION_GIT" validate_git
+run_step_degraded "VALIDATION_DIRENV" validate_direnv
 
 # Docker validation with checkpointing
 validate_docker() {
@@ -1110,6 +1150,7 @@ if [[ "$OS" == "Darwin" ]]; then
     run_step "TOOL_GRPCURL_INSTALL" install_tool_with_retry "grpcurl" "command -v grpcurl" brew install grpcurl
     run_step "TOOL_GRPCUI_INSTALL" install_tool_with_retry "grpcui" "command -v grpcui" brew install grpcui
     run_step "TOOL_PROTOC_INSTALL" install_tool_with_retry "protoc" "command -v protoc" brew install protobuf
+    run_step_degraded "TOOL_DIRENV_INSTALL" install_tool_with_retry "direnv" "command -v direnv" brew install direnv
 else
     # Linux/other OS - validation only
     validate_tool_installed() {
@@ -1220,6 +1261,38 @@ install_dependencies() {
 }
 
 run_step "DEPENDENCIES_INSTALL" install_dependencies
+
+# Setup direnv environment for 'lab' command shortcut
+setup_direnv_environment() {
+    log_debug "Setting up direnv environment..."
+    
+    # Check if direnv is available
+    if ! command -v direnv &> /dev/null; then
+        log_info "direnv not available - skipping environment setup"
+        return 0
+    fi
+    
+    # .envrc should already exist, but create if missing
+    if [ ! -f ".envrc" ]; then
+        log_warning ".envrc missing, creating it..."
+        cat > .envrc << 'EOF'
+#!/bin/bash
+# Add CLI directory to PATH so 'lab' command is available
+PATH_add cli
+EOF
+    fi
+    
+    # Allow the .envrc file
+    if ! direnv status | grep -q "Found RC allowed true" 2>/dev/null; then
+        log_info "Allowing .envrc file for direnv..."
+        direnv allow
+        log_success "direnv environment configured - 'lab' command now available"
+    else
+        log_success "direnv environment already configured"
+    fi
+}
+
+run_step_degraded "DIRENV_SETUP" setup_direnv_environment
 
 # Environment validation and smoke tests with checkpointing
 test_verdaccio_accessibility() {
@@ -1368,7 +1441,15 @@ echo "   npm config set registry http://localhost:4873"
 echo "   npm config get registry"
 echo ""
 echo "ℹ️  Additional commands:"
-echo "   ./cli/lab.sh --status     # Check service status"
-echo "   ./cli/lab.sh --version    # Show tool versions"
-echo "   ./cli/lab.sh --cleanup    # Stop all services"
-echo "   ./cli/lab.sh --help       # Show detailed help"
+if command -v direnv &> /dev/null && direnv status | grep -q "Found RC allowed true" 2>/dev/null; then
+    echo "   lab --status              # Check service status (direnv shortcut)"
+    echo "   lab --version             # Show tool versions"
+    echo "   lab --cleanup             # Stop all services"
+    echo "   lab --help                # Show detailed help"
+else
+    echo "   ./cli/lab.sh --status     # Check service status"
+    echo "   ./cli/lab.sh --version    # Show tool versions"
+    echo "   ./cli/lab.sh --cleanup    # Stop all services"
+    echo "   ./cli/lab.sh --help       # Show detailed help"
+    echo "   (Install direnv and run 'direnv allow' to use 'lab' shortcut)"
+fi
