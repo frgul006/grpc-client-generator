@@ -17,6 +17,7 @@
 - **MANDATORY**: NEVER create git commits without using mcp**zen**precommit first
 - Progress documentation is MANDATORY - the user will verify this was done
 - Use zen and context7 tools for complex technical challenges
+- **Shell scripting**: Use `sleep` instead of `timeout` command (timeout doesn't work as expected on macOS)
 
 ## Enhanced AI Capabilities: Zen and Context7
 
