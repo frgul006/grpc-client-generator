@@ -25,6 +25,33 @@ VERDACCIO_TIMEOUT=120
 TOOL_INSTALL_TIMEOUT=300
 NETWORK_NAME="grpc-dev-network"
 
+# Repository path detection
+find_repo_root() {
+    local current_dir="$(pwd)"
+    
+    # Look for .git directory or other markers going up the directory tree
+    while [ "$current_dir" != "/" ]; do
+        if [ -d "$current_dir/.git" ] && [ -f "$current_dir/.envrc" ] && [ -d "$current_dir/cli" ]; then
+            echo "$current_dir"
+            return 0
+        fi
+        current_dir="$(dirname "$current_dir")"
+    done
+    
+    # Not found
+    return 1
+}
+
+# Detect repository root and set up paths
+if ! REPO_ROOT=$(find_repo_root); then
+    echo "❌ Error: Not inside the gRPC experiment repository"
+    echo "   Please run this command from within the repository directory"
+    exit 1
+fi
+
+# Update paths to be relative to repository root
+STATE_FILE="$REPO_ROOT/.setup_state"
+
 # Colors for enhanced logging
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -157,7 +184,7 @@ validate_state_consistency() {
     
     # Check if dependencies state is consistent
     if grep -q "DEPENDENCIES_INSTALL=COMPLETED" "$STATE_FILE" 2>/dev/null; then
-        if [ ! -d "apis/product-api/node_modules" ]; then
+        if [ ! -d "$REPO_ROOT/apis/product-api/node_modules" ]; then
             warnings+=("Dependencies marked as installed but node_modules not found")
             inconsistencies=$((inconsistencies + 1))
         fi
@@ -686,9 +713,9 @@ show_status() {
     verdaccio_type=""
     
     # Check if running in Docker
-    if [ -f "registry/docker-compose.yml" ]; then
+    if [ -f "$REPO_ROOT/registry/docker-compose.yml" ]; then
         # Check docker-compose status without a subshell by specifying the file path
-        if docker compose -f registry/docker-compose.yml ps verdaccio 2>/dev/null | grep -q "Up"; then
+        if docker compose -f "$REPO_ROOT/registry/docker-compose.yml" ps verdaccio 2>/dev/null | grep -q "Up"; then
             verdaccio_running=true
             verdaccio_type="Docker"
         fi
@@ -744,13 +771,13 @@ show_status() {
     # Project dependencies
     echo ""
     echo "📦 Project Status:"
-    if [ -d "apis/product-api/node_modules" ]; then
+    if [ -d "$REPO_ROOT/apis/product-api/node_modules" ]; then
         echo "• Dependencies: ✅ Installed"
     else
         echo "• Dependencies: ❌ Not installed"
     fi
     
-    if [ -f "apis/product-api/package.json" ]; then
+    if [ -f "$REPO_ROOT/apis/product-api/package.json" ]; then
         echo "• Package.json: ✅ Found"
     else
         echo "• Package.json: ❌ Missing"
@@ -847,7 +874,7 @@ show_status() {
         docker network ls --format "{{.Name}}" | grep -q "^grpc-dev-network$" && network_exists=1
         
         deps_installed=0
-        [ -d "apis/product-api/node_modules" ] && deps_installed=1
+        [ -d "$REPO_ROOT/apis/product-api/node_modules" ] && deps_installed=1
         
         if [ $tools_installed -ge 2 ] && [ $network_exists -eq 1 ] && [ $deps_installed -eq 1 ]; then
             echo "• Setup appears complete (state file auto-cleaned)"
@@ -864,9 +891,9 @@ cleanup_services() {
     echo "🧹 Cleaning up services..."
     
     # Stop Verdaccio
-    if [ -f "registry/docker-compose.yml" ]; then
+    if [ -f "$REPO_ROOT/registry/docker-compose.yml" ]; then
         (
-            cd registry
+            cd "$REPO_ROOT/registry"
             if docker compose ps verdaccio | grep -q "Up"; then
                 log_info "Stopping Verdaccio registry..."
                 docker compose down
@@ -890,9 +917,9 @@ check_for_updates() {
     fi
     
     # Check npm updates
-    if command -v npm &> /dev/null && [ -f "apis/product-api/package.json" ]; then
+    if command -v npm &> /dev/null && [ -f "$REPO_ROOT/apis/product-api/package.json" ]; then
         (
-            cd apis/product-api
+            cd "$REPO_ROOT/apis/product-api"
             if ! npm outdated --json &> /dev/null; then
                 echo "• Run 'npm update' to update Node.js dependencies"
             fi
@@ -945,11 +972,11 @@ validate_nodejs() {
     log_success "npm v$NPM_VERSION is installed"
     
     # Check if we're in the right directory structure
-    if [ ! -f "apis/product-api/package.json" ]; then
+    if [ ! -f "$REPO_ROOT/apis/product-api/package.json" ]; then
         log_error "Expected project structure not found."
-        log_info "   Looking for: apis/product-api/package.json"
+        log_info "   Looking for: $REPO_ROOT/apis/product-api/package.json"
         log_info "   Current dir: $(pwd)"
-        log_info "   Make sure you're running this from the project root"
+        log_info "   Repository root: $REPO_ROOT"
         exit 1
     fi
     
@@ -1032,8 +1059,8 @@ validate_direnv() {
     
     log_success "direnv is installed"
     
-    # Check if .envrc exists and is allowed
-    if [ -f ".envrc" ]; then
+    # Check if .envrc exists and is allowed  
+    if [ -f "$REPO_ROOT/.envrc" ]; then
         if direnv status | grep -q "Found RC allowed true"; then
             log_success ".envrc is properly configured - 'lab' command available"
         else
@@ -1174,13 +1201,13 @@ setup_verdaccio() {
     log_info "🗃️ Setting up local NPM registry (Verdaccio)..."
     
     # Change to registry directory
-    if [ ! -d "registry" ]; then
-        log_error "Registry directory not found"
+    if [ ! -d "$REPO_ROOT/registry" ]; then
+        log_error "Registry directory not found at $REPO_ROOT/registry"
         return 1
     fi
     
     (
-        cd registry
+        cd "$REPO_ROOT/registry"
         
         # Check if Verdaccio is already running
         if docker compose ps verdaccio | grep -q "Up"; then
@@ -1226,13 +1253,13 @@ install_dependencies() {
     log_debug "Installing project dependencies..."
     
     # Check if project directory exists
-    if [ ! -f "apis/product-api/package.json" ]; then
-        log_error "Project directory apis/product-api/package.json not found"
+    if [ ! -f "$REPO_ROOT/apis/product-api/package.json" ]; then
+        log_error "Project directory $REPO_ROOT/apis/product-api/package.json not found"
         return 1
     fi
     
     (
-        cd apis/product-api
+        cd "$REPO_ROOT/apis/product-api"
         
         # Check if dependencies are already installed
         if [ -d "node_modules" ] && [ -f "package-lock.json" ]; then
@@ -1273,9 +1300,9 @@ setup_direnv_environment() {
     fi
     
     # .envrc should already exist, but create if missing
-    if [ ! -f ".envrc" ]; then
+    if [ ! -f "$REPO_ROOT/.envrc" ]; then
         log_warning ".envrc missing, creating it..."
-        cat > .envrc << 'EOF'
+        cat > "$REPO_ROOT/.envrc" << 'EOF'
 #!/bin/bash
 # Add CLI directory to PATH so 'lab' command is available
 PATH_add cli
@@ -1285,7 +1312,7 @@ EOF
     # Allow the .envrc file
     if ! direnv status | grep -q "Found RC allowed true" 2>/dev/null; then
         log_info "Allowing .envrc file for direnv..."
-        direnv allow
+        (cd "$REPO_ROOT" && direnv allow)
         log_success "direnv environment configured - 'lab' command now available"
     else
         log_success "direnv environment already configured"
@@ -1313,7 +1340,7 @@ test_protoc_generation() {
     log_debug "Testing protoc code generation..."
     
     (
-        cd apis/product-api
+        cd "$REPO_ROOT/apis/product-api"
         if output=$(npm run generate 2>&1); then
             log_success "Protoc code generation works"
             return 0
@@ -1330,7 +1357,7 @@ test_typescript_compilation() {
     log_debug "Testing TypeScript compilation..."
     
     (
-        cd apis/product-api
+        cd "$REPO_ROOT/apis/product-api"
         if output=$(npm run check:types 2>&1); then
             log_success "TypeScript compilation works"
             return 0
