@@ -16,7 +16,7 @@ A gRPC service for managing products and inventory, built with Node.js and TypeS
 Run the setup script from the workspace root to install required tools:
 
 ```bash
-cd ../.. && ./cli/lab.sh
+cd ../.. && lab
 ```
 
 This installs:
