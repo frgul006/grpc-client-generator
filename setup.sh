@@ -9,6 +9,7 @@ HELP_MODE=false
 RESUME_MODE=false
 RESET_MODE=false
 KEEP_STATE_MODE=false
+VERBOSE_MODE=false
 
 # Error recovery configuration
 STATE_FILE=".setup_state"
@@ -53,6 +54,12 @@ log_progress() {
     printf "${CYAN}[%s] 🔄 %s${NC}\n" "$(date '+%H:%M:%S')" "$1"
 }
 
+log_debug() {
+    if [ "$VERBOSE_MODE" = true ]; then
+        printf "${CYAN}[%s] 🔍 %s${NC}\n" "$(date '+%H:%M:%S')" "$1"
+    fi
+}
+
 # =============================================================================
 # ERROR RECOVERY AND STATE MANAGEMENT SYSTEM
 # =============================================================================
@@ -75,7 +82,7 @@ set_checkpoint() {
     # Atomically replace the old state file
     mv "$tmp_state_file" "$STATE_FILE"
     
-    log_info "Checkpoint: $step → $status"
+    log_debug "Checkpoint: $step → $status"
 }
 
 get_checkpoint() {
@@ -251,7 +258,7 @@ run_step() {
         return 0
     fi
     
-    log_progress "Starting step: $step_name"
+    log_debug "Starting step: $step_name"
     CURRENT_STEP="$step_name"
     set_checkpoint "$step_name" "IN_PROGRESS"
     
@@ -260,7 +267,7 @@ run_step() {
     
     set_checkpoint "$step_name" "COMPLETED"
     CURRENT_STEP=""
-    log_success "Completed step: $step_name"
+    log_debug "Completed step: $step_name"
 }
 
 # Enhanced error reporting with context and categorization
@@ -306,7 +313,7 @@ run_step_degraded() {
         return 0
     fi
     
-    log_progress "Starting optional step: $step_name"
+    log_debug "Starting optional step: $step_name"
     CURRENT_STEP="$step_name"
     set_checkpoint "$step_name" "IN_PROGRESS"
     
@@ -314,7 +321,7 @@ run_step_degraded() {
     if "${command_to_run[@]}"; then
         set_checkpoint "$step_name" "COMPLETED"
         CURRENT_STEP=""
-        log_success "Completed optional step: $step_name"
+        log_debug "Completed optional step: $step_name"
         return 0
     else
         set_checkpoint "$step_name" "DEGRADED"
@@ -402,7 +409,7 @@ install_tool_with_retry() {
         return 0
     fi
     
-    log_progress "Installing $tool_name..."
+    log_debug "Installing $tool_name..."
     if retry_with_backoff $MAX_RETRY_ATTEMPTS $BASE_RETRY_DELAY "${install_command[@]}"; then
         log_success "$tool_name installed successfully"
         return 0
@@ -418,7 +425,7 @@ docker_operation_with_retry() {
     shift
     local docker_command=("$@")
     
-    log_progress "Executing Docker operation: $operation_name"
+    log_debug "Executing Docker operation: $operation_name"
     if retry_with_backoff $MAX_RETRY_ATTEMPTS $BASE_RETRY_DELAY "${docker_command[@]}"; then
         log_success "Docker operation '$operation_name' completed"
         return 0
@@ -443,7 +450,7 @@ safe_execute() {
     fi
     
     # Execute command
-    log_progress "Executing: $step_name"
+    log_debug "Executing: $step_name"
     "${command[@]}"
     
     # Validate result
@@ -472,6 +479,7 @@ OPTIONS:
     --resume        Resume setup from last successful checkpoint
     --reset         Clear all checkpoints and start fresh
     --keep-state    Preserve setup state file after completion
+    --verbose       Enable verbose logging with debug output
 
 EXAMPLES:
     ./setup.sh              # Normal setup
@@ -521,6 +529,10 @@ parse_args() {
                 ;;
             --keep-state)
                 KEEP_STATE_MODE=true
+                shift
+                ;;
+            --verbose)
+                VERBOSE_MODE=true
                 shift
                 ;;
             *)
@@ -672,13 +684,11 @@ show_status() {
     
     # Check if running in Docker
     if [ -f "registry/docker-compose.yml" ]; then
-        (
-            cd registry
-            if docker compose ps verdaccio | grep -q "Up"; then
-                verdaccio_running=true
-                verdaccio_type="Docker"
-            fi
-        )
+        # Check docker-compose status without a subshell by specifying the file path
+        if docker compose -f registry/docker-compose.yml ps verdaccio 2>/dev/null | grep -q "Up"; then
+            verdaccio_running=true
+            verdaccio_type="Docker"
+        fi
     fi
     
     # Check if running standalone (via port check)
@@ -702,16 +712,25 @@ show_status() {
     echo ""
     echo "🔌 Port Status:"
     if command -v lsof &> /dev/null; then
-        if lsof -i :4873 &> /dev/null; then
-            PROCESS_4873=$(lsof -i :4873 | awk 'NR>1 {print $1 " (PID " $2 ")"; exit}')
-            echo "• Port 4873 (Verdaccio): 🔴 In use by $PROCESS_4873"
+        local lsof_4873_output
+        lsof_4873_output=$(lsof -i :4873 2>/dev/null)
+        if [ -n "$lsof_4873_output" ]; then
+            if [ "$verdaccio_running" = true ]; then
+                echo "• Port 4873 (Verdaccio): 🟢 In use by Verdaccio ($verdaccio_type)"
+            else
+                local PROCESS_4873
+                PROCESS_4873=$(echo "$lsof_4873_output" | awk 'NR>1 {print $1 " (PID " $2 ")"; exit}')
+                echo "• Port 4873 (Verdaccio): 🔴 In use by $PROCESS_4873 (Conflict)"
+            fi
         else
             echo "• Port 4873 (Verdaccio): 🟢 Available"
         fi
         
         if lsof -i :50052 &> /dev/null; then
+            local PROCESS_50052
             PROCESS_50052=$(lsof -i :50052 | awk 'NR>1 {print $1 " (PID " $2 ")"; exit}')
-            echo "• Port 50052 (gRPC): 🔴 In use by $PROCESS_50052"
+            # Use a warning, as this might be the service running correctly
+            echo "• Port 50052 (gRPC): ⚠️  In use by $PROCESS_50052"
         else
             echo "• Port 50052 (gRPC): 🟢 Available"
         fi
@@ -890,7 +909,7 @@ log_info "🚀 Setting up gRPC development environment..."
 
 # Validate Node.js environment
 validate_nodejs() {
-    log_progress "Validating Node.js environment..."
+    log_debug "Validating Node.js environment..."
     
     # Check if Node.js is installed
     if ! command -v node &> /dev/null; then
@@ -936,7 +955,7 @@ validate_nodejs() {
 
 # Check for port conflicts
 check_port_conflicts() {
-    log_progress "Checking for port conflicts..."
+    log_debug "Checking for port conflicts..."
     
     # Check if lsof is available
     if ! command -v lsof &> /dev/null; then
@@ -966,7 +985,7 @@ check_port_conflicts() {
 
 # Validate git environment
 validate_git() {
-    log_progress "Validating git environment..."
+    log_debug "Validating git environment..."
     
     # Check if git is installed
     if ! command -v git &> /dev/null; then
@@ -1129,14 +1148,14 @@ setup_verdaccio() {
         fi
         
         # Start Verdaccio with retry logic
-        log_progress "Starting Verdaccio registry..."
+        log_debug "Starting Verdaccio registry..."
         if ! retry_with_backoff $MAX_RETRY_ATTEMPTS $BASE_RETRY_DELAY docker compose up -d; then
             log_error "Failed to start Verdaccio registry"
             return 1
         fi
         
         # Wait for health check with timeout
-        log_progress "Waiting for Verdaccio to be healthy..."
+        log_debug "Waiting for Verdaccio to be healthy..."
         local counter=0
         while (( counter < VERDACCIO_TIMEOUT )); do
             if docker compose ps verdaccio | grep -q "healthy"; then
@@ -1163,7 +1182,7 @@ run_step "VERDACCIO_SETUP" setup_verdaccio
 
 # Project dependencies installation with retry and checkpointing
 install_dependencies() {
-    log_progress "Installing project dependencies..."
+    log_debug "Installing project dependencies..."
     
     # Check if project directory exists
     if [ ! -f "apis/product-api/package.json" ]; then
@@ -1181,7 +1200,7 @@ install_dependencies() {
         fi
         
         # Install dependencies with retry logic
-        log_progress "Running npm install..."
+        log_debug "Running npm install..."
         if retry_with_backoff $MAX_RETRY_ATTEMPTS $BASE_RETRY_DELAY npm install; then
             log_success "Dependencies installed successfully"
             
@@ -1204,7 +1223,7 @@ run_step "DEPENDENCIES_INSTALL" install_dependencies
 
 # Environment validation and smoke tests with checkpointing
 test_verdaccio_accessibility() {
-    log_info "Testing Verdaccio accessibility..."
+    log_debug "Testing Verdaccio accessibility..."
     
     # Test with timeout using curl's built-in timeout feature
     if curl --max-time $NETWORK_TIMEOUT -s http://localhost:4873 > /dev/null; then
@@ -1218,7 +1237,7 @@ test_verdaccio_accessibility() {
 }
 
 test_protoc_generation() {
-    log_info "Testing protoc code generation..."
+    log_debug "Testing protoc code generation..."
     
     (
         cd apis/product-api
@@ -1235,7 +1254,7 @@ test_protoc_generation() {
 }
 
 test_typescript_compilation() {
-    log_info "Testing TypeScript compilation..."
+    log_debug "Testing TypeScript compilation..."
     
     (
         cd apis/product-api
