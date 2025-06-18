@@ -2,15 +2,9 @@
 set -Eeuo pipefail
 
 # Configuration
-CLEANUP_MODE=false
-STATUS_MODE=false
-VERSION_MODE=false
-HELP_MODE=false
-RESUME_MODE=false
-RESET_MODE=false
+COMMAND=""
 KEEP_STATE_MODE=false
 VERBOSE_MODE=false
-SETUP_MODE=false
 
 # Error recovery configuration
 STATE_FILE=".setup_state"
@@ -197,7 +191,7 @@ validate_state_consistency() {
         for warning in "${warnings[@]}"; do
             log_warning "  • $warning"
         done
-        log_info "Consider running 'lab --reset' to start fresh"
+        log_info "Consider running 'lab reset' to start fresh"
         return 1
     fi
     
@@ -220,9 +214,9 @@ handle_error() {
     
     # Provide recovery suggestion
     log_info "💡 Recovery options:"
-    log_info "   • Run 'lab --status' to check current state"
-    log_info "   • Run 'lab --resume' to continue from last checkpoint"
-    log_info "   • Run 'lab --reset' to start fresh"
+    log_info "   • Run 'lab status' to check current state"
+    log_info "   • Run 'lab resume' to continue from last checkpoint"
+    log_info "   • Run 'lab reset' to start fresh"
     
     exit "$exit_code"
 }
@@ -236,7 +230,7 @@ handle_interrupt() {
         log_info "Marked step '$CURRENT_STEP' as failed"
     fi
     
-    log_info "💡 Use 'lab --resume' to continue from last successful step"
+    log_info "💡 Use 'lab resume' to continue from last successful step"
     exit 130
 }
 
@@ -310,7 +304,7 @@ report_error() {
         "FATAL")
             log_error "FATAL ERROR $error_code in $component during $operation"
             log_info "💡 Suggestion: $suggestion"
-            log_info "Setup cannot continue. Fix this issue and run 'lab --resume'"
+            log_info "Setup cannot continue. Fix this issue and run 'lab resume'"
             ;;
         "RECOVERABLE")
             log_warning "RECOVERABLE ERROR $error_code in $component during $operation"
@@ -324,7 +318,7 @@ report_error() {
             ;;
     esac
     
-    log_info "Run 'lab --status' to check current state"
+    log_info "Run 'lab status' to check current state"
 }
 
 # Graceful degradation for non-critical operations
@@ -491,36 +485,233 @@ safe_execute() {
     fi
 }
 
+# Show command-specific help
+show_command_help() {
+    local cmd="$1"
+    case "$cmd" in
+        setup)
+            show_setup_help
+            ;;
+        status)
+            show_status_help
+            ;;
+        cleanup)
+            show_cleanup_help
+            ;;
+        version)
+            show_version_help
+            ;;
+        resume)
+            show_resume_help
+            ;;
+        reset)
+            show_reset_help
+            ;;
+        help)
+            show_help
+            ;;
+        *)
+            log_error "Unknown command: '$cmd'"
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+show_setup_help() {
+    cat << 'EOF'
+🧪 Lab Setup - Development Environment Setup
+
+USAGE:
+    lab setup [OPTIONS]
+
+DESCRIPTION:
+    Sets up the complete gRPC development environment including tools,
+    Docker services, and configuration.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --keep-state    Preserve setup state file after completion
+    --help          Show this help message
+
+SETUP PROCESS:
+    • Install development tools (grpcurl, grpcui, protoc, direnv)
+    • Set up Docker network and Verdaccio registry
+    • Validate Node.js environment and dependencies
+    • Configure direnv for 'lab' command shortcut
+    • Run environment smoke tests
+
+EXAMPLES:
+    lab setup                    # Standard setup
+    lab setup --verbose          # Setup with debug output
+    lab setup --keep-state       # Setup and keep state file
+
+RECOVERY:
+    If setup fails, use 'lab resume' to continue from last checkpoint
+    or 'lab reset' to start fresh.
+
+EOF
+}
+
+show_status_help() {
+    cat << 'EOF'
+🧪 Lab Status - Service Status Check
+
+USAGE:
+    lab status [OPTIONS]
+
+DESCRIPTION:
+    Shows the current status of all development environment services
+    and tools, including version information and connectivity checks.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+EXAMPLES:
+    lab status                   # Show service status
+    lab status --verbose         # Show detailed status information
+
+EOF
+}
+
+show_cleanup_help() {
+    cat << 'EOF'
+🧪 Lab Cleanup - Stop Services
+
+USAGE:
+    lab cleanup [OPTIONS]
+
+DESCRIPTION:
+    Stops all running development services including Docker containers
+    and cleans up temporary resources.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+EXAMPLES:
+    lab cleanup                  # Stop all services
+    lab cleanup --verbose        # Stop services with debug output
+
+EOF
+}
+
+show_version_help() {
+    cat << 'EOF'
+🧪 Lab Version - Tool Versions
+
+USAGE:
+    lab version [OPTIONS]
+
+DESCRIPTION:
+    Shows version information for all installed development tools
+    including grpcurl, grpcui, protoc, Node.js, and Docker.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+EXAMPLES:
+    lab version                  # Show tool versions
+    lab version --verbose        # Show detailed version information
+
+EOF
+}
+
+show_resume_help() {
+    cat << 'EOF'
+🧪 Lab Resume - Resume Setup
+
+USAGE:
+    lab resume [OPTIONS]
+
+DESCRIPTION:
+    Resumes the development environment setup from the last successful
+    checkpoint. Validates state consistency before continuing.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+EXAMPLES:
+    lab resume                   # Resume from last checkpoint
+    lab resume --verbose         # Resume with debug output
+
+NOTE:
+    If no checkpoint file exists, this will start a fresh setup.
+    Use 'lab reset' first if you want to clear inconsistent state.
+
+EOF
+}
+
+show_reset_help() {
+    cat << 'EOF'
+🧪 Lab Reset - Clear Checkpoints
+
+USAGE:
+    lab reset [OPTIONS]
+
+DESCRIPTION:
+    Clears all setup checkpoints and state files. Use this when you want
+    to start the setup process completely fresh.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+EXAMPLES:
+    lab reset                    # Clear all checkpoints
+    lab reset --verbose          # Clear with debug output
+
+NOTE:
+    After resetting, run 'lab setup' to start a fresh setup.
+
+EOF
+}
+
 # Show help information
 show_help() {
     cat << 'EOF'
 🧪 Lab - gRPC Development Environment CLI
 
 USAGE:
-    lab [OPTIONS]
+    lab <command> [options]
+    lab [--help]
 
-OPTIONS:
-    --help          Show this help message
-    --setup         Run the development environment setup
-    --status        Show current status of services and tools
-    --version       Show version information for all tools
-    --cleanup       Stop all services and clean up
-    --resume        Resume setup from last successful checkpoint
-    --reset         Clear all checkpoints and start fresh
-    --keep-state    Preserve setup state file after completion
+COMMANDS:
+    setup           Run the development environment setup
+    status          Show current status of services and tools
+    version         Show version information for all tools
+    cleanup         Stop all services and clean up
+    resume          Resume setup from last successful checkpoint
+    reset           Clear all checkpoints and start fresh
+    help            Show this help message
+
+GLOBAL OPTIONS:
     --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+COMMAND-SPECIFIC OPTIONS:
+    setup:
+      --keep-state  Preserve setup state file after completion
 
 EXAMPLES:
-    lab              # Show this help
-    lab --setup      # Run development environment setup
-    lab --status     # Check service status
-    lab --cleanup    # Stop all services
-    lab --version    # Show tool versions
-    lab --resume     # Resume from last checkpoint
-    lab --reset      # Clear checkpoints and start fresh
-    lab --setup --keep-state # Setup with persistent state file
+    lab help                     # Show this help
+    lab setup                    # Run development environment setup
+    lab setup --verbose          # Setup with debug output
+    lab setup --keep-state       # Setup with persistent state file
+    lab status                   # Check service status
+    lab cleanup                  # Stop all services
+    lab version                  # Show tool versions
+    lab resume                   # Resume from last checkpoint
+    lab reset                    # Clear checkpoints and start fresh
 
-The --setup command will:
+COMMAND HELP:
+    lab <command> --help         # Show help for specific command
+    lab help <command>           # Alternative help syntax
+
+The setup command will:
 • Install development tools (grpcurl, grpcui, protoc, direnv)
 • Set up Docker network and Verdaccio registry
 • Validate Node.js environment and dependencies
@@ -534,31 +725,29 @@ EOF
 
 # Parse command line arguments
 parse_args() {
+    # First argument is the command (if provided)
+    if [[ $# -gt 0 ]] && [[ ! "$1" =~ ^-- ]]; then
+        COMMAND="$1"
+        shift
+        
+        # Handle 'lab help <command>' syntax
+        if [[ "$COMMAND" == "help" ]] && [[ $# -gt 0 ]] && [[ ! "$1" =~ ^-- ]]; then
+            show_command_help "$1"
+            exit 0
+        fi
+    fi
+    
+    # Parse remaining flags
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --cleanup)
-                CLEANUP_MODE=true
-                shift
-                ;;
-            --status)
-                STATUS_MODE=true
-                shift
-                ;;
-            --version)
-                VERSION_MODE=true
-                shift
-                ;;
             --help)
-                HELP_MODE=true
-                shift
-                ;;
-            --resume)
-                RESUME_MODE=true
-                shift
-                ;;
-            --reset)
-                RESET_MODE=true
-                shift
+                if [[ -n "$COMMAND" ]]; then
+                    show_command_help "$COMMAND"
+                    exit 0
+                else
+                    show_help
+                    exit 0
+                fi
                 ;;
             --keep-state)
                 KEEP_STATE_MODE=true
@@ -568,78 +757,94 @@ parse_args() {
                 VERBOSE_MODE=true
                 shift
                 ;;
-            --setup)
-                SETUP_MODE=true
-                shift
-                ;;
             *)
-                log_error "Unknown option: '$1'"
+                if [[ ! "$1" =~ ^-- ]]; then # This is a non-flag argument
+                    if [[ -z "$COMMAND" ]]; then
+                        # No command was specified at the start, so this is a misplaced command.
+                        log_error "Command '$1' must be specified before any flags."
+                        log_info "Correct usage: lab $1 [options]"
+                    else
+                        # A command was already specified, so this is an extra, invalid argument.
+                        log_error "Too many arguments. Unexpected argument: '$1'"
+                        log_info "Run 'lab help $COMMAND' to see usage for the '$COMMAND' command."
+                    fi
+                else
+                    log_error "Unknown option: '$1'"
+                fi
                 show_help
                 exit 1
                 ;;
         esac
     done
+    
+    # Default to help if no command provided
+    if [[ -z "$COMMAND" ]]; then
+        COMMAND="help"
+    fi
 }
 
-# Handle different modes
-handle_modes() {
-    if [ "$HELP_MODE" = true ]; then
-        show_help
-        exit 0
+# Handle different commands
+handle_command() {
+    if [[ "$KEEP_STATE_MODE" == true ]] && [[ "$COMMAND" != "setup" ]] && [[ "$COMMAND" != "resume" ]]; then
+        log_error "--keep-state is only valid with the 'setup' or 'resume' commands."
+        show_command_help "$COMMAND"
+        exit 1
     fi
-    
-    if [ "$VERSION_MODE" = true ]; then
-        show_versions
-        exit 0
-    fi
-    
-    if [ "$STATUS_MODE" = true ]; then
-        show_status
-        exit 0
-    fi
-    
-    if [ "$CLEANUP_MODE" = true ]; then
-        cleanup_services
-        exit 0
-    fi
-    
-    if [ "$RESET_MODE" = true ]; then
-        clear_checkpoints
-        log_info "Setup state reset. Run 'lab --setup' to start fresh."
-        exit 0
-    fi
-    
-    if [ "$RESUME_MODE" = true ]; then
-        if [ ! -f "$STATE_FILE" ]; then
-            log_warning "No checkpoint file found. Starting fresh setup."
-        else
-            log_info "Resuming setup from checkpoints..."
-            log_info "Validating checkpoint consistency with actual system state..."
-            
-            if validate_state_consistency; then
-                log_success "State file is consistent with system state"
+    case "$COMMAND" in
+        help)
+            show_help
+            exit 0
+            ;;
+        version)
+            show_versions
+            exit 0
+            ;;
+        status)
+            show_status
+            exit 0
+            ;;
+        cleanup)
+            cleanup_services
+            exit 0
+            ;;
+        reset)
+            clear_checkpoints
+            log_info "Setup state reset. Run 'lab setup' to start fresh."
+            exit 0
+            ;;
+        resume)
+            if [ ! -f "$STATE_FILE" ]; then
+                log_warning "No checkpoint file found. Starting fresh setup."
             else
-                log_warning "State file inconsistencies detected (see warnings above)"
-                log_info "You can continue anyway, but consider '--reset' for a clean start"
+                log_info "Resuming setup from checkpoints..."
+                log_info "Validating checkpoint consistency with actual system state..."
                 
-                # Give user a chance to cancel
-                echo ""
-                echo "Continue with potentially inconsistent state? (y/N)"
-                if ! read -r -t 10 response || [[ ! "$response" =~ ^[Yy]$ ]]; then
-                    log_info "Setup cancelled. Use 'lab --reset' then 'lab --setup' to start fresh."
-                    exit 0
+                if validate_state_consistency; then
+                    log_success "State file is consistent with system state"
+                else
+                    log_warning "State file inconsistencies detected (see warnings above)"
+                    log_info "You can continue anyway, but consider 'lab reset' for a clean start"
+                    
+                    # Give user a chance to cancel
+                    echo ""
+                    echo "Continue with potentially inconsistent state? (y/N)"
+                    if ! read -r -t 10 response || [[ ! "$response" =~ ^[Yy]$ ]]; then
+                        log_info "Setup cancelled. Use 'lab reset' then 'lab setup' to start fresh."
+                        exit 0
+                    fi
                 fi
             fi
-        fi
-    fi
-    
-    # Default behavior: show help if no mode specified
-    if [ "$HELP_MODE" = false ] && [ "$VERSION_MODE" = false ] && [ "$STATUS_MODE" = false ] && \
-       [ "$CLEANUP_MODE" = false ] && [ "$RESET_MODE" = false ] && [ "$RESUME_MODE" = false ] && \
-       [ "$SETUP_MODE" = false ]; then
-        show_help
-        exit 0
-    fi
+            # Continue with setup after resume validation
+            ;;
+        setup)
+            # Continue with setup process
+            ;;
+        *)
+            log_error "Unknown command: '$COMMAND'"
+            log_info "Run 'lab help' to see available commands"
+            exit 1
+            ;;
+    esac
 }
 
 # Show version information
@@ -850,8 +1055,8 @@ show_status() {
         if [ $failed -gt 0 ] || [ $in_progress -gt 0 ]; then
             echo ""
             echo "💡 Recovery options:"
-            echo "   • Run 'lab --resume' to continue from last checkpoint"
-            echo "   • Run 'lab --reset' to clear state and start fresh"
+            echo "   • Run 'lab resume' to continue from last checkpoint"
+            echo "   • Run 'lab reset' to clear state and start fresh"
         fi
         
         # Show detailed step status
@@ -893,10 +1098,10 @@ show_status() {
         
         if [ $tools_installed -ge 2 ] && [ $network_exists -eq 1 ] && [ $deps_installed -eq 1 ]; then
             echo "• Setup appears complete (state file auto-cleaned)"
-            echo "• Run 'lab --keep-state' to re-create state tracking"
+            echo "• Run 'lab setup --keep-state' to re-create state tracking"
         else
             echo "• No setup progress recorded"
-            echo "• Run 'lab --setup' to start setup with checkpointing"
+            echo "• Run 'lab setup' to start setup with checkpointing"
         fi
     fi
 }
@@ -947,11 +1152,11 @@ check_for_updates() {
 # Parse arguments
 parse_args "$@"
 
-# Handle special modes
-handle_modes
+# Handle commands
+handle_command
 
-# Only continue with setup if SETUP_MODE is true
-if [ "$SETUP_MODE" = false ]; then
+# Only continue with setup if command is setup or resume
+if [ "$COMMAND" != "setup" ] && [ "$COMMAND" != "resume" ]; then
     exit 0
 fi
 
@@ -1064,7 +1269,7 @@ validate_direnv() {
     # Check if direnv is installed
     if ! command -v direnv &> /dev/null; then
         log_warning "direnv is not installed but recommended for 'lab' command shortcut"
-        log_info "   This allows running 'lab --status' from any directory"
+        log_info "   This allows running 'lab status' from any directory"
         
         # On macOS, offer to install via brew
         if [[ "$OSTYPE" == "darwin"* ]] && command -v brew &> /dev/null; then
@@ -1457,7 +1662,7 @@ show_setup_summary() {
                         echo "• TypeScript compilation: Check for type errors with 'npm run check:types'"
                         ;;
                     *)
-                        echo "• $step: Run 'lab --status' for details"
+                        echo "• $step: Run 'lab status' for details"
                         ;;
                 esac
             done
@@ -1468,7 +1673,7 @@ show_setup_summary() {
             echo ""
             echo "❌ Failed Components Requiring Attention:"
             grep "=FAILED$" "$STATE_FILE" 2>/dev/null | while IFS='=' read -r step status; do
-                echo "• $step: Run 'lab --resume' after fixing prerequisites"
+                echo "• $step: Run 'lab resume' after fixing prerequisites"
             done
         fi
     fi
@@ -1497,14 +1702,14 @@ echo "   npm config get registry"
 echo ""
 echo "ℹ️  Additional commands:"
 if command -v direnv &> /dev/null && direnv status | grep -q "Found RC allowed true" 2>/dev/null; then
-    echo "   lab --status              # Check service status (direnv shortcut)"
-    echo "   lab --version             # Show tool versions"
-    echo "   lab --cleanup             # Stop all services"
-    echo "   lab --help                # Show detailed help"
+    echo "   lab status               # Check service status (direnv shortcut)"
+    echo "   lab version              # Show tool versions"
+    echo "   lab cleanup              # Stop all services"
+    echo "   lab help                 # Show detailed help"
 else
-    echo "   lab --status     # Check service status"
-    echo "   lab --version    # Show tool versions"
-    echo "   lab --cleanup    # Stop all services"
-    echo "   lab --help       # Show detailed help"
+    echo "   lab status       # Check service status"
+    echo "   lab version      # Show tool versions"
+    echo "   lab cleanup      # Stop all services"
+    echo "   lab help         # Show detailed help"
     echo "   (Install direnv and run 'direnv allow' to use 'lab' shortcut)"
 fi
