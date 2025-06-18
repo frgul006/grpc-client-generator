@@ -1,12 +1,15 @@
 # Ticket 04: Improve Documentation
 
 ## Epic/Scope
+
 setup-script
 
 ## What
+
 Enhance setup.sh inline documentation, comments, and create comprehensive usage documentation to improve maintainability and user experience.
 
 ## Why
+
 - **Maintainability**: Well-documented code is easier to modify and debug
 - **Onboarding**: New team members can understand and contribute faster
 - **Troubleshooting**: Clear documentation reduces support burden
@@ -20,7 +23,9 @@ The current setup.sh is sophisticated (600+ lines) but could benefit from better
 ### 1. Inline Code Documentation
 
 #### Function Documentation
+
 Add comprehensive docstrings for all major functions:
+
 ```bash
 # Validates Node.js installation and version requirements
 # Globals:
@@ -38,18 +43,21 @@ validate_nodejs() {
 ```
 
 #### Complex Logic Comments
+
 - Explain non-obvious bash constructs
 - Document why specific approaches were chosen
 - Add context for platform-specific code
 - Explain complex regex patterns or command pipelines
 
 ### 2. Header Documentation
+
 Add comprehensive script header:
+
 ```bash
 #!/bin/bash
 #
 # gRPC Development Environment Setup Script
-# 
+#
 # Description:
 #   Automated setup and validation for gRPC development environment.
 #   Handles tool installation, Docker setup, Verdaccio registry, and
@@ -77,7 +85,9 @@ Add comprehensive script header:
 ### 3. Usage Documentation
 
 #### Create setup-script-guide.md
+
 Comprehensive guide covering:
+
 - Prerequisites and system requirements
 - Step-by-step setup process
 - Troubleshooting common issues
@@ -85,7 +95,9 @@ Comprehensive guide covering:
 - Advanced configuration options
 
 #### Troubleshooting Section
+
 Document common issues and solutions:
+
 - Port conflict resolution
 - Docker daemon not running
 - Permission issues
@@ -93,12 +105,14 @@ Document common issues and solutions:
 - Tool installation failures
 
 ### 4. Code Organization Documentation
+
 - Document the script's overall structure
 - Explain the flow of execution
 - Map major functions to their purposes
 - Document global variables and their usage
 
 ### 5. Integration Documentation
+
 - How setup.sh integrates with other project components
 - Dependencies on external tools and services
 - Impact of setup changes on development workflow
@@ -126,15 +140,19 @@ Document common issues and solutions:
 - [ ] Documentation is accessible via `--help` flag enhancement
 
 ## Priority
+
 Medium
 
 ## Estimated Effort
+
 Medium (2-3 hours)
 
 ## Dependencies
+
 - None (can be done independently)
 
 ## Risks
+
 - Documentation becoming outdated as code evolves
 - Over-documentation reducing code readability
 - Time investment without immediate functional benefit

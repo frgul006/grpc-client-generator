@@ -1,12 +1,15 @@
 # Ticket 02: Add Testing Framework
 
 ## Epic/Scope
+
 setup-script
 
 ## What
+
 Implement a testing framework for setup.sh using bats-core (Bash Automated Testing System) to add automated testing for critical setup and validation functions.
 
 ## Why
+
 - **Regression Protection**: Prevent breaking changes to setup functionality
 - **Confidence**: Enable safe refactoring and feature additions
 - **Documentation**: Tests serve as executable documentation of expected behavior
@@ -18,11 +21,13 @@ As setup.sh becomes more sophisticated (600+ lines), manual testing becomes insu
 ## How
 
 ### 1. Install bats-core
+
 - Add bats-core installation to setup.sh tool installation section
 - Support installation via package managers (brew, apt) and git submodules
 - Add version verification and availability checks
 
 ### 2. Test Structure Setup
+
 - Create `tests/` directory in project root
 - Create `tests/setup.bats` for main test suite
 - Add `tests/helper.bash` for shared test utilities
@@ -31,32 +36,38 @@ As setup.sh becomes more sophisticated (600+ lines), manual testing becomes insu
 ### 3. Test Categories
 
 #### Environment Validation Tests
+
 - Test Node.js version checking (valid/invalid versions)
 - Test port conflict detection (with mock lsof output)
 - Test Docker availability and network creation
 - Test git repository detection
 
 #### Tool Installation Tests
+
 - Test tool availability checking
 - Test version reporting functionality
 - Mock external commands for reliable testing
 
 #### CLI Interface Tests
+
 - Test all command-line flags (--help, --status, --version, --cleanup)
 - Test error handling for invalid arguments
 - Test output formatting and logging
 
 #### Integration Tests
+
 - Test complete setup workflow in clean environment
 - Test cleanup functionality
 - Test status reporting accuracy
 
 ### 4. Test Infrastructure
+
 - Create test doubles/mocks for external commands
 - Add test environment isolation
 - Implement setup/teardown functions for test state
 
 ### 5. CI Integration
+
 - Add `make test` command to run all tests
 - Include in GitHub Actions workflow (if exists)
 - Add test coverage reporting
@@ -78,15 +89,19 @@ As setup.sh becomes more sophisticated (600+ lines), manual testing becomes insu
 - [ ] setup.sh --status includes bats availability check
 
 ## Priority
+
 High
 
 ## Estimated Effort
+
 Large (4-6 hours)
 
 ## Dependencies
+
 - None (can be done independently)
 
 ## Risks
+
 - Test environment isolation complexity
 - Mocking external dependencies (docker, npm, etc.)
 - Platform-specific test differences
