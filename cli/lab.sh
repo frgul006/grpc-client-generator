@@ -169,7 +169,7 @@ validate_state_consistency() {
         for warning in "${warnings[@]}"; do
             log_warning "  • $warning"
         done
-        log_info "Consider running './setup.sh --reset' to start fresh"
+        log_info "Consider running './cli/lab.sh --reset' to start fresh"
         return 1
     fi
     
@@ -192,9 +192,9 @@ handle_error() {
     
     # Provide recovery suggestion
     log_info "💡 Recovery options:"
-    log_info "   • Run './setup.sh --status' to check current state"
-    log_info "   • Run './setup.sh --resume' to continue from last checkpoint"
-    log_info "   • Run './setup.sh --reset' to start fresh"
+    log_info "   • Run './cli/lab.sh --status' to check current state"
+    log_info "   • Run './cli/lab.sh --resume' to continue from last checkpoint"
+    log_info "   • Run './cli/lab.sh --reset' to start fresh"
     
     exit "$exit_code"
 }
@@ -208,7 +208,7 @@ handle_interrupt() {
         log_info "Marked step '$CURRENT_STEP' as failed"
     fi
     
-    log_info "💡 Use './setup.sh --resume' to continue from last successful step"
+    log_info "💡 Use './cli/lab.sh --resume' to continue from last successful step"
     exit 130
 }
 
@@ -282,7 +282,7 @@ report_error() {
         "FATAL")
             log_error "FATAL ERROR $error_code in $component during $operation"
             log_info "💡 Suggestion: $suggestion"
-            log_info "Setup cannot continue. Fix this issue and run './setup.sh --resume'"
+            log_info "Setup cannot continue. Fix this issue and run './cli/lab.sh --resume'"
             ;;
         "RECOVERABLE")
             log_warning "RECOVERABLE ERROR $error_code in $component during $operation"
@@ -296,7 +296,7 @@ report_error() {
             ;;
     esac
     
-    log_info "Run './setup.sh --status' to check current state"
+    log_info "Run './cli/lab.sh --status' to check current state"
 }
 
 # Graceful degradation for non-critical operations
@@ -466,10 +466,10 @@ safe_execute() {
 # Show help information
 show_help() {
     cat << 'EOF'
-🚀 gRPC Development Environment Setup
+🧪 Lab - gRPC Development Environment CLI
 
 USAGE:
-    ./setup.sh [OPTIONS]
+    ./cli/lab.sh [OPTIONS]
 
 OPTIONS:
     --help          Show this help message
@@ -482,13 +482,13 @@ OPTIONS:
     --verbose       Enable verbose logging with debug output
 
 EXAMPLES:
-    ./setup.sh              # Normal setup
-    ./setup.sh --status     # Check service status
-    ./setup.sh --cleanup    # Stop all services
-    ./setup.sh --version    # Show tool versions
-    ./setup.sh --resume     # Resume from last checkpoint
-    ./setup.sh --reset      # Clear checkpoints and start fresh
-    ./setup.sh --keep-state # Setup with persistent state file
+    ./cli/lab.sh              # Normal setup
+    ./cli/lab.sh --status     # Check service status
+    ./cli/lab.sh --cleanup    # Stop all services
+    ./cli/lab.sh --version    # Show tool versions
+    ./cli/lab.sh --resume     # Resume from last checkpoint
+    ./cli/lab.sh --reset      # Clear checkpoints and start fresh
+    ./cli/lab.sh --keep-state # Setup with persistent state file
 
 This script will:
 • Install development tools (grpcurl, grpcui, protoc)
@@ -568,7 +568,7 @@ handle_modes() {
     
     if [ "$RESET_MODE" = true ]; then
         clear_checkpoints
-        log_info "Setup state reset. Run './setup.sh' to start fresh."
+        log_info "Setup state reset. Run './cli/lab.sh' to start fresh."
         exit 0
     fi
     
@@ -589,7 +589,7 @@ handle_modes() {
                 echo ""
                 echo "Continue with potentially inconsistent state? (y/N)"
                 if ! read -r -t 10 response || [[ ! "$response" =~ ^[Yy]$ ]]; then
-                    log_info "Setup cancelled. Use './setup.sh --reset' to start fresh."
+                    log_info "Setup cancelled. Use './cli/lab.sh --reset' to start fresh."
                     exit 0
                 fi
             fi
@@ -805,8 +805,8 @@ show_status() {
         if [ $failed -gt 0 ] || [ $in_progress -gt 0 ]; then
             echo ""
             echo "💡 Recovery options:"
-            echo "   • Run './setup.sh --resume' to continue from last checkpoint"
-            echo "   • Run './setup.sh --reset' to clear state and start fresh"
+            echo "   • Run './cli/lab.sh --resume' to continue from last checkpoint"
+            echo "   • Run './cli/lab.sh --reset' to clear state and start fresh"
         fi
         
         # Show detailed step status
@@ -848,10 +848,10 @@ show_status() {
         
         if [ $tools_installed -ge 2 ] && [ $network_exists -eq 1 ] && [ $deps_installed -eq 1 ]; then
             echo "• Setup appears complete (state file auto-cleaned)"
-            echo "• Run './setup.sh --keep-state' to re-create state tracking"
+            echo "• Run './cli/lab.sh --keep-state' to re-create state tracking"
         else
             echo "• No setup progress recorded"
-            echo "• Run './setup.sh' to start setup with checkpointing"
+            echo "• Run './cli/lab.sh' to start setup with checkpointing"
         fi
     fi
 }
@@ -905,7 +905,7 @@ parse_args "$@"
 # Handle special modes
 handle_modes
 
-log_info "🚀 Setting up gRPC development environment..."
+log_info "🧪 Lab: Setting up gRPC development environment..."
 
 # Validate Node.js environment
 validate_nodejs() {
@@ -1329,7 +1329,7 @@ show_setup_summary() {
                         echo "• TypeScript compilation: Check for type errors with 'npm run check:types'"
                         ;;
                     *)
-                        echo "• $step: Run './setup.sh --status' for details"
+                        echo "• $step: Run './cli/lab.sh --status' for details"
                         ;;
                 esac
             done
@@ -1340,7 +1340,7 @@ show_setup_summary() {
             echo ""
             echo "❌ Failed Components Requiring Attention:"
             grep "=FAILED$" "$STATE_FILE" 2>/dev/null | while IFS='=' read -r step status; do
-                echo "• $step: Run './setup.sh --resume' after fixing prerequisites"
+                echo "• $step: Run './cli/lab.sh --resume' after fixing prerequisites"
             done
         fi
     fi
@@ -1368,7 +1368,7 @@ echo "   npm config set registry http://localhost:4873"
 echo "   npm config get registry"
 echo ""
 echo "ℹ️  Additional commands:"
-echo "   ./setup.sh --status     # Check service status"
-echo "   ./setup.sh --version    # Show tool versions"
-echo "   ./setup.sh --cleanup    # Stop all services"
-echo "   ./setup.sh --help       # Show detailed help"
+echo "   ./cli/lab.sh --status     # Check service status"
+echo "   ./cli/lab.sh --version    # Show tool versions"
+echo "   ./cli/lab.sh --cleanup    # Stop all services"
+echo "   ./cli/lab.sh --help       # Show detailed help"
