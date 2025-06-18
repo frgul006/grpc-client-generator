@@ -47,3 +47,6 @@ temp/
 # Verdaccio local registry
 verdaccio-storage/
 verdaccio-htpasswd
+
+# Local development configurations
+.claude/settings.local.json

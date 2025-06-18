@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { ProductRepository, Product, Inventory } from '../../data/products';
+import { ProductRepository, Product, Inventory } from '../../data/products.js';
 
 describe('ProductService Integration Tests', () => {
   let originalProducts: Map<string, Product>;

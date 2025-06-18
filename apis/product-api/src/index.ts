@@ -1,13 +1,16 @@
 import { Server, ServerCredentials } from "@grpc/grpc-js";
 import { addReflection } from "grpc-server-reflection";
-import { ProductServiceService } from "./generated/product_grpc_pb";
-import { productServiceImplementation } from "./service/product-service";
-import { join } from "path";
+import { ProductServiceService } from "./generated/product.js";
+import { productServiceImplementation } from "./service/product-service.js";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { existsSync } from "fs";
 
 const PORT = process.env.PORT || "50052";
 
-// __dirname is available in CommonJS modules
+// __dirname replacement for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const descriptorPath = join(__dirname, "generated", "product.pb");
 
 const server = new Server();

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { ProductRepository, Product, Inventory } from '../../data/products';
+import { ProductRepository, Product, Inventory } from '../../data/products.js';
 
 describe('ProductRepository', () => {
   let originalProducts: Map<string, Product>;

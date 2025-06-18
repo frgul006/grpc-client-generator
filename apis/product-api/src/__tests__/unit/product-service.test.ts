@@ -1,69 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { status } from '@grpc/grpc-js';
-import { productServiceImplementation } from '../../service/product-service';
-import { ProductRepository, Product, Inventory } from '../../data/products';
+import { productServiceImplementation } from '../../service/product-service.js';
+import { ProductRepository, Product, Inventory } from '../../data/products.js';
 import { 
   GetProductResponse,
   GetInventoryResponse,
   Product as ProductProto,
   Inventory as InventoryProto
-} from '../../generated/product_pb';
-import { mockConsole, restoreConsole } from '../setup';
+} from '../../generated/product.js';
+import { mockConsole, restoreConsole } from '../setup.js';
 
-// Mock the protobuf classes
-vi.mock('../../generated/product_pb', () => {
-  const createMockProto = (data: any = {}) => ({
-    ...data,
-    setId: vi.fn().mockReturnThis(),
-    setName: vi.fn().mockReturnThis(),
-    setDescription: vi.fn().mockReturnThis(),
-    setPrice: vi.fn().mockReturnThis(),
-    setCategory: vi.fn().mockReturnThis(),
-    setSku: vi.fn().mockReturnThis(),
-    setCreatedAt: vi.fn().mockReturnThis(),
-    setUpdatedAt: vi.fn().mockReturnThis(),
-    setProduct: vi.fn().mockReturnThis(),
-    setProductsList: vi.fn().mockReturnThis(),
-    setNextPageToken: vi.fn().mockReturnThis(),
-    setTotalCount: vi.fn().mockReturnThis(),
-    setSuccess: vi.fn().mockReturnThis(),
-    setProductId: vi.fn().mockReturnThis(),
-    setQuantity: vi.fn().mockReturnThis(),
-    setWarehouseId: vi.fn().mockReturnThis(),
-    setLastRestocked: vi.fn().mockReturnThis(),
-    setInventoryList: vi.fn().mockReturnThis(),
-    setTotalQuantity: vi.fn().mockReturnThis(),
-    getId: vi.fn(),
-    getName: vi.fn(),
-    getDescription: vi.fn(),
-    getPrice: vi.fn(),
-    getCategory: vi.fn(),
-    getSku: vi.fn(),
-    getPageSize: vi.fn(),
-    getPageToken: vi.fn(),
-    getMinPrice: vi.fn(),
-    getMaxPrice: vi.fn(),
-    getProductId: vi.fn()
-  });
-
-  return {
-    GetProductRequest: vi.fn(),
-    GetProductResponse: vi.fn().mockImplementation(() => createMockProto()),
-    ListProductsRequest: vi.fn(),
-    ListProductsResponse: vi.fn().mockImplementation(() => createMockProto()),
-    CreateProductRequest: vi.fn(),
-    CreateProductResponse: vi.fn().mockImplementation(() => createMockProto()),
-    UpdateProductRequest: vi.fn(),
-    UpdateProductResponse: vi.fn().mockImplementation(() => createMockProto()),
-    DeleteProductRequest: vi.fn(),
-    DeleteProductResponse: vi.fn().mockImplementation(() => createMockProto()),
-    GetInventoryRequest: vi.fn(),
-    GetInventoryResponse: vi.fn().mockImplementation(() => createMockProto()),
-    Product: vi.fn().mockImplementation(() => createMockProto()),
-    Inventory: vi.fn().mockImplementation(() => createMockProto())
-  };
-});
+// Since ts-proto generates interfaces instead of classes, we don't need complex mocks
+// The service now returns plain objects that match the interface types
 
 describe('ProductService', () => {
   let originalProducts: Map<string, Product>;
@@ -129,20 +78,24 @@ describe('ProductService', () => {
   describe('getProduct', () => {
     it('should return product when found', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.getProduct(mockCall as any, mockCallback);
 
-      expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
-      expect(mockCallback).not.toHaveBeenCalledWith(expect.objectContaining({ code: expect.any(Number) }));
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        product: expect.objectContaining({
+          id: '1',
+          name: 'Test Product 1'
+        })
+      }));
     });
 
     it('should return NOT_FOUND error when product does not exist', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('999')
+        id: '999'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -157,7 +110,7 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when id is missing', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('')
+        id: ''
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -172,7 +125,7 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when id is null', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue(null)
+        id: ''
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -187,7 +140,7 @@ describe('ProductService', () => {
 
     it('should log the product request', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -201,76 +154,91 @@ describe('ProductService', () => {
   describe('listProducts', () => {
     it('should return products with default pagination', () => {
       const mockRequest = {
-        getPageSize: vi.fn().mockReturnValue(0), // Should default to 10
-        getPageToken: vi.fn().mockReturnValue(''),
-        getCategory: vi.fn().mockReturnValue(''),
-        getMinPrice: vi.fn().mockReturnValue(0),
-        getMaxPrice: vi.fn().mockReturnValue(0)
+        pageSize: 0, // Should default to 10
+        pageToken: '',
+        category: '',
+        minPrice: 0,
+        maxPrice: 0
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.listProducts(mockCall as any, mockCallback);
 
-      expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
-      expect(mockCallback).not.toHaveBeenCalledWith(expect.objectContaining({ code: expect.any(Number) }));
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        products: expect.any(Array),
+        nextPageToken: expect.any(String),
+        totalCount: expect.any(Number)
+      }));
     });
 
     it('should handle pagination parameters', () => {
       const mockRequest = {
-        getPageSize: vi.fn().mockReturnValue(1),
-        getPageToken: vi.fn().mockReturnValue(''),
-        getCategory: vi.fn().mockReturnValue(''),
-        getMinPrice: vi.fn().mockReturnValue(0),
-        getMaxPrice: vi.fn().mockReturnValue(0)
+        pageSize: 1,
+        pageToken: '',
+        category: '',
+        minPrice: 0,
+        maxPrice: 0
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.listProducts(mockCall as any, mockCallback);
 
-      expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        products: expect.any(Array),
+        nextPageToken: expect.any(String),
+        totalCount: expect.any(Number)
+      }));
     });
 
     it('should handle category filter', () => {
       const mockRequest = {
-        getPageSize: vi.fn().mockReturnValue(10),
-        getPageToken: vi.fn().mockReturnValue(''),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getMinPrice: vi.fn().mockReturnValue(0),
-        getMaxPrice: vi.fn().mockReturnValue(0)
+        pageSize: 10,
+        pageToken: '',
+        category: 'Electronics',
+        minPrice: 0,
+        maxPrice: 0
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.listProducts(mockCall as any, mockCallback);
 
-      expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        products: expect.any(Array),
+        nextPageToken: expect.any(String),
+        totalCount: expect.any(Number)
+      }));
     });
 
     it('should handle price range filters', () => {
       const mockRequest = {
-        getPageSize: vi.fn().mockReturnValue(10),
-        getPageToken: vi.fn().mockReturnValue(''),
-        getCategory: vi.fn().mockReturnValue(''),
-        getMinPrice: vi.fn().mockReturnValue(50),
-        getMaxPrice: vi.fn().mockReturnValue(150)
+        pageSize: 10,
+        pageToken: '',
+        category: '',
+        minPrice: 50,
+        maxPrice: 150
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.listProducts(mockCall as any, mockCallback);
 
-      expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        products: expect.any(Array),
+        nextPageToken: expect.any(String),
+        totalCount: expect.any(Number)
+      }));
     });
 
     it('should log the list request with parameters', () => {
       const mockRequest = {
-        getPageSize: vi.fn().mockReturnValue(5),
-        getPageToken: vi.fn().mockReturnValue('token123'),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getMinPrice: vi.fn().mockReturnValue(100),
-        getMaxPrice: vi.fn().mockReturnValue(500)
+        pageSize: 5,
+        pageToken: 'token123',
+        category: 'Electronics',
+        minPrice: 100,
+        maxPrice: 500
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -286,28 +254,32 @@ describe('ProductService', () => {
   describe('createProduct', () => {
     it('should create product with valid data', () => {
       const mockRequest = {
-        getName: vi.fn().mockReturnValue('New Product'),
-        getDescription: vi.fn().mockReturnValue('A new product'),
-        getPrice: vi.fn().mockReturnValue(299.99),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getSku: vi.fn().mockReturnValue('NEW-001')
+        name: 'New Product',
+        description: 'A new product',
+        price: 299.99,
+        category: 'Electronics',
+        sku: 'NEW-001'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.createProduct(mockCall as any, mockCallback);
 
-      expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
-      expect(mockCallback).not.toHaveBeenCalledWith(expect.objectContaining({ code: expect.any(Number) }));
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        product: expect.objectContaining({
+          name: 'New Product',
+          description: 'A new product'
+        })
+      }));
     });
 
     it('should return INVALID_ARGUMENT error when name is missing', () => {
       const mockRequest = {
-        getName: vi.fn().mockReturnValue(''),
-        getDescription: vi.fn().mockReturnValue('A new product'),
-        getPrice: vi.fn().mockReturnValue(299.99),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getSku: vi.fn().mockReturnValue('NEW-001')
+        name: '',
+        description: 'A new product',
+        price: 299.99,
+        category: 'Electronics',
+        sku: 'NEW-001'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -322,11 +294,11 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when description is missing', () => {
       const mockRequest = {
-        getName: vi.fn().mockReturnValue('New Product'),
-        getDescription: vi.fn().mockReturnValue(''),
-        getPrice: vi.fn().mockReturnValue(299.99),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getSku: vi.fn().mockReturnValue('NEW-001')
+        name: 'New Product',
+        description: '',
+        price: 299.99,
+        category: 'Electronics',
+        sku: 'NEW-001'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -341,11 +313,11 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when price is missing', () => {
       const mockRequest = {
-        getName: vi.fn().mockReturnValue('New Product'),
-        getDescription: vi.fn().mockReturnValue('A new product'),
-        getPrice: vi.fn().mockReturnValue(0),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getSku: vi.fn().mockReturnValue('NEW-001')
+        name: 'New Product',
+        description: 'A new product',
+        price: 0,
+        category: 'Electronics',
+        sku: 'NEW-001'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -360,11 +332,11 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when category is missing', () => {
       const mockRequest = {
-        getName: vi.fn().mockReturnValue('New Product'),
-        getDescription: vi.fn().mockReturnValue('A new product'),
-        getPrice: vi.fn().mockReturnValue(299.99),
-        getCategory: vi.fn().mockReturnValue(''),
-        getSku: vi.fn().mockReturnValue('NEW-001')
+        name: 'New Product',
+        description: 'A new product',
+        price: 299.99,
+        category: '',
+        sku: 'NEW-001'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -379,11 +351,11 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when SKU is missing', () => {
       const mockRequest = {
-        getName: vi.fn().mockReturnValue('New Product'),
-        getDescription: vi.fn().mockReturnValue('A new product'),
-        getPrice: vi.fn().mockReturnValue(299.99),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getSku: vi.fn().mockReturnValue('')
+        name: 'New Product',
+        description: 'A new product',
+        price: 299.99,
+        category: 'Electronics',
+        sku: ''
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -398,11 +370,11 @@ describe('ProductService', () => {
 
     it('should log the create request', () => {
       const mockRequest = {
-        getName: vi.fn().mockReturnValue('New Product'),
-        getDescription: vi.fn().mockReturnValue('A new product'),
-        getPrice: vi.fn().mockReturnValue(299.99),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getSku: vi.fn().mockReturnValue('NEW-001')
+        name: 'New Product',
+        description: 'A new product',
+        price: 299.99,
+        category: 'Electronics',
+        sku: 'NEW-001'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -418,11 +390,11 @@ describe('ProductService', () => {
   describe('updateProduct', () => {
     it('should update existing product', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1'),
-        getName: vi.fn().mockReturnValue('Updated Product'),
-        getDescription: vi.fn().mockReturnValue('Updated description'),
-        getPrice: vi.fn().mockReturnValue(150.00),
-        getCategory: vi.fn().mockReturnValue('Updated Category')
+        id: '1',
+        name: 'Updated Product',
+        description: 'Updated description',
+        price: 150.00,
+        category: 'Updated Category'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -435,11 +407,11 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when id is missing', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue(''),
-        getName: vi.fn().mockReturnValue('Updated Product'),
-        getDescription: vi.fn().mockReturnValue('Updated description'),
-        getPrice: vi.fn().mockReturnValue(150.00),
-        getCategory: vi.fn().mockReturnValue('Updated Category')
+        id: '',
+        name: 'Updated Product',
+        description: 'Updated description',
+        price: 150.00,
+        category: 'Updated Category'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -454,11 +426,11 @@ describe('ProductService', () => {
 
     it('should return NOT_FOUND error when product does not exist', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('999'),
-        getName: vi.fn().mockReturnValue('Updated Product'),
-        getDescription: vi.fn().mockReturnValue('Updated description'),
-        getPrice: vi.fn().mockReturnValue(150.00),
-        getCategory: vi.fn().mockReturnValue('Updated Category')
+        id: '999',
+        name: 'Updated Product',
+        description: 'Updated description',
+        price: 150.00,
+        category: 'Updated Category'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -473,11 +445,11 @@ describe('ProductService', () => {
 
     it('should handle partial updates', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1'),
-        getName: vi.fn().mockReturnValue('Updated Name Only'),
-        getDescription: vi.fn().mockReturnValue(''),
-        getPrice: vi.fn().mockReturnValue(0),
-        getCategory: vi.fn().mockReturnValue('')
+        id: '1',
+        name: 'Updated Name Only',
+        description: '',
+        price: 0,
+        category: ''
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -489,11 +461,11 @@ describe('ProductService', () => {
 
     it('should log the update request', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1'),
-        getName: vi.fn().mockReturnValue('Updated Product'),
-        getDescription: vi.fn().mockReturnValue('Updated description'),
-        getPrice: vi.fn().mockReturnValue(150.00),
-        getCategory: vi.fn().mockReturnValue('Updated Category')
+        id: '1',
+        name: 'Updated Product',
+        description: 'Updated description',
+        price: 150.00,
+        category: 'Updated Category'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -509,7 +481,7 @@ describe('ProductService', () => {
   describe('deleteProduct', () => {
     it('should delete existing product', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -522,7 +494,7 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when id is missing', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('')
+        id: ''
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -537,7 +509,7 @@ describe('ProductService', () => {
 
     it('should return NOT_FOUND error when product does not exist', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('999')
+        id: '999'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -552,7 +524,7 @@ describe('ProductService', () => {
 
     it('should log the delete request', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -566,7 +538,7 @@ describe('ProductService', () => {
   describe('getInventory', () => {
     it('should return inventory for existing product', () => {
       const mockRequest = {
-        getProductId: vi.fn().mockReturnValue('1')
+        productId: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -579,7 +551,7 @@ describe('ProductService', () => {
 
     it('should return INVALID_ARGUMENT error when product id is missing', () => {
       const mockRequest = {
-        getProductId: vi.fn().mockReturnValue('')
+        productId: ''
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -594,7 +566,7 @@ describe('ProductService', () => {
 
     it('should handle product with no inventory', () => {
       const mockRequest = {
-        getProductId: vi.fn().mockReturnValue('999')
+        productId: '999'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -606,7 +578,7 @@ describe('ProductService', () => {
 
     it('should log the inventory request', () => {
       const mockRequest = {
-        getProductId: vi.fn().mockReturnValue('1')
+        productId: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -626,7 +598,7 @@ describe('ProductService', () => {
       });
 
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -643,30 +615,36 @@ describe('ProductService', () => {
   describe('data transformation', () => {
     it('should properly transform product data for responses', () => {
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.getProduct(mockCall as any, mockCallback);
 
-      // Verify the response object was created and methods were called
-      expect(GetProductResponse).toHaveBeenCalled();
-      expect(ProductProto).toHaveBeenCalled();
+      // Verify the response was called with proper data structure
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        product: expect.objectContaining({
+          id: '1',
+          name: 'Test Product 1'
+        })
+      }));
     });
 
     it('should properly transform inventory data for responses', () => {
       const mockRequest = {
-        getProductId: vi.fn().mockReturnValue('1')
+        productId: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
 
       productServiceImplementation.getInventory(mockCall as any, mockCallback);
 
-      // Verify the response objects were created
-      expect(GetInventoryResponse).toHaveBeenCalled();
-      expect(InventoryProto).toHaveBeenCalled();
+      // Verify the response was called with proper data structure
+      expect(mockCallback).toHaveBeenCalledWith(null, expect.objectContaining({
+        inventory: expect.any(Array),
+        totalQuantity: expect.any(Number)
+      }));
     });
   });
 
@@ -675,7 +653,7 @@ describe('ProductService', () => {
       const getByIdSpy = vi.spyOn(ProductRepository, 'getById');
       
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -691,11 +669,11 @@ describe('ProductService', () => {
       const createSpy = vi.spyOn(ProductRepository, 'create');
       
       const mockRequest = {
-        getName: vi.fn().mockReturnValue('New Product'),
-        getDescription: vi.fn().mockReturnValue('A new product'),
-        getPrice: vi.fn().mockReturnValue(299.99),
-        getCategory: vi.fn().mockReturnValue('Electronics'),
-        getSku: vi.fn().mockReturnValue('NEW-001')
+        name: 'New Product',
+        description: 'A new product',
+        price: 299.99,
+        category: 'Electronics',
+        sku: 'NEW-001'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -717,11 +695,11 @@ describe('ProductService', () => {
       const updateSpy = vi.spyOn(ProductRepository, 'update');
       
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1'),
-        getName: vi.fn().mockReturnValue('Updated Product'),
-        getDescription: vi.fn().mockReturnValue(''),
-        getPrice: vi.fn().mockReturnValue(0),
-        getCategory: vi.fn().mockReturnValue('')
+        id: '1',
+        name: 'Updated Product',
+        description: '',
+        price: 0,
+        category: ''
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -739,7 +717,7 @@ describe('ProductService', () => {
       const deleteSpy = vi.spyOn(ProductRepository, 'delete');
       
       const mockRequest = {
-        getId: vi.fn().mockReturnValue('1')
+        id: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
@@ -756,7 +734,7 @@ describe('ProductService', () => {
       const getTotalQuantitySpy = vi.spyOn(ProductRepository, 'getTotalQuantity');
       
       const mockRequest = {
-        getProductId: vi.fn().mockReturnValue('1')
+        productId: '1'
       };
       const mockCall = { request: mockRequest };
       const mockCallback = vi.fn();
