@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package product.v1;
+
+option go_package = "github.com/yourorg/openapi-client-generator/grpc-apis/product-service/proto/product/v1;productv1";
+
+service ProductService {
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+  rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse);
+  rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
+  rpc GetInventory(GetInventoryRequest) returns (GetInventoryResponse);
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  string category = 5;
+  string sku = 6;
+  int64 created_at = 7;
+  int64 updated_at = 8;
+}
+
+message Inventory {
+  string product_id = 1;
+  int32 quantity = 2;
+  string warehouse_id = 3;
+  int64 last_restocked = 4;
+}
+
+message GetProductRequest {
+  string id = 1;
+}
+
+message GetProductResponse {
+  Product product = 1;
+}
+
+message ListProductsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string category = 3;
+  double min_price = 4;
+  double max_price = 5;
+}
+
+message ListProductsResponse {
+  repeated Product products = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateProductRequest {
+  string name = 1;
+  string description = 2;
+  double price = 3;
+  string category = 4;
+  string sku = 5;
+}
+
+message CreateProductResponse {
+  Product product = 1;
+}
+
+message UpdateProductRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  string category = 5;
+}
+
+message UpdateProductResponse {
+  Product product = 1;
+}
+
+message DeleteProductRequest {
+  string id = 1;
+}
+
+message DeleteProductResponse {
+  bool success = 1;
+}
+
+message GetInventoryRequest {
+  string product_id = 1;
+}
+
+message GetInventoryResponse {
+  repeated Inventory inventory = 1;
+  int32 total_quantity = 2;
+}

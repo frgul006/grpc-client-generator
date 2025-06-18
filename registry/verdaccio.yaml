@@ -1,0 +1,37 @@
+# Verdaccio configuration with no authentication for development
+
+storage: /verdaccio/storage
+
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+
+packages:
+  # Allow everything for all packages  
+  '**':
+    access: $all
+    publish: $all
+    unpublish: $all
+    proxy: npmjs
+
+# Disable security features for local dev
+security:
+  api:
+    jwt:
+      sign:
+        expiresIn: 60d
+  web:
+    sign:
+      expiresIn: 7d
+
+server:
+  keepAliveTimeout: 60
+
+web:
+  enable: true
+  title: Local NPM Registry
+
+logs:
+  - { type: stdout, format: pretty, level: warn }
+
+listen: 0.0.0.0:4873
