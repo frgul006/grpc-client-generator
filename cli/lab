@@ -10,6 +10,7 @@ RESUME_MODE=false
 RESET_MODE=false
 KEEP_STATE_MODE=false
 VERBOSE_MODE=false
+SETUP_MODE=false
 
 # Error recovery configuration
 STATE_FILE=".setup_state"
@@ -500,8 +501,9 @@ USAGE:
 
 OPTIONS:
     --help          Show this help message
-    --version       Show version information for all tools
+    --setup         Run the development environment setup
     --status        Show current status of services and tools
+    --version       Show version information for all tools
     --cleanup       Stop all services and clean up
     --resume        Resume setup from last successful checkpoint
     --reset         Clear all checkpoints and start fresh
@@ -509,15 +511,16 @@ OPTIONS:
     --verbose       Enable verbose logging with debug output
 
 EXAMPLES:
-    lab              # Normal setup
+    lab              # Show this help
+    lab --setup      # Run development environment setup
     lab --status     # Check service status
     lab --cleanup    # Stop all services
     lab --version    # Show tool versions
     lab --resume     # Resume from last checkpoint
     lab --reset      # Clear checkpoints and start fresh
-    lab --keep-state # Setup with persistent state file
+    lab --setup --keep-state # Setup with persistent state file
 
-This script will:
+The --setup command will:
 • Install development tools (grpcurl, grpcui, protoc, direnv)
 • Set up Docker network and Verdaccio registry
 • Validate Node.js environment and dependencies
@@ -565,6 +568,10 @@ parse_args() {
                 VERBOSE_MODE=true
                 shift
                 ;;
+            --setup)
+                SETUP_MODE=true
+                shift
+                ;;
             *)
                 log_error "Unknown option: '$1'"
                 show_help
@@ -598,7 +605,7 @@ handle_modes() {
     
     if [ "$RESET_MODE" = true ]; then
         clear_checkpoints
-        log_info "Setup state reset. Run 'lab' to start fresh."
+        log_info "Setup state reset. Run 'lab --setup' to start fresh."
         exit 0
     fi
     
@@ -619,11 +626,19 @@ handle_modes() {
                 echo ""
                 echo "Continue with potentially inconsistent state? (y/N)"
                 if ! read -r -t 10 response || [[ ! "$response" =~ ^[Yy]$ ]]; then
-                    log_info "Setup cancelled. Use 'lab --reset' to start fresh."
+                    log_info "Setup cancelled. Use 'lab --reset' then 'lab --setup' to start fresh."
                     exit 0
                 fi
             fi
         fi
+    fi
+    
+    # Default behavior: show help if no mode specified
+    if [ "$HELP_MODE" = false ] && [ "$VERSION_MODE" = false ] && [ "$STATUS_MODE" = false ] && \
+       [ "$CLEANUP_MODE" = false ] && [ "$RESET_MODE" = false ] && [ "$RESUME_MODE" = false ] && \
+       [ "$SETUP_MODE" = false ]; then
+        show_help
+        exit 0
     fi
 }
 
@@ -881,7 +896,7 @@ show_status() {
             echo "• Run 'lab --keep-state' to re-create state tracking"
         else
             echo "• No setup progress recorded"
-            echo "• Run 'lab' to start setup with checkpointing"
+            echo "• Run 'lab --setup' to start setup with checkpointing"
         fi
     fi
 }
@@ -934,6 +949,11 @@ parse_args "$@"
 
 # Handle special modes
 handle_modes
+
+# Only continue with setup if SETUP_MODE is true
+if [ "$SETUP_MODE" = false ]; then
+    exit 0
+fi
 
 log_info "🧪 Lab: Setting up gRPC development environment..."
 
