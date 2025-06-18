@@ -50,3 +50,4 @@ verdaccio-htpasswd
 
 # Local development configurations
 .claude/settings.local.json
+.setup_state
