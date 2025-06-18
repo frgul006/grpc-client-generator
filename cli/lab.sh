@@ -524,7 +524,7 @@ This script will:
 • Configure direnv for 'lab' command shortcut
 • Run environment smoke tests
 
-After setup, you can use 'lab' instead of './cli/lab.sh' (requires direnv).
+After setup, you can use 'lab' from any subdirectory instead of './cli/lab.sh' (requires direnv).
 
 EOF
 }
@@ -1304,8 +1304,16 @@ setup_direnv_environment() {
         log_warning ".envrc missing, creating it..."
         cat > "$REPO_ROOT/.envrc" << 'EOF'
 #!/bin/bash
-# Add CLI directory to PATH so 'lab' command is available
-PATH_add cli
+# Add CLI directory to PATH so 'lab' command is available from any subdirectory
+# Find the repository root and add its cli directory to PATH
+REPO_ROOT=$(pwd)
+while [ "$REPO_ROOT" != "/" ]; do
+    if [ -d "$REPO_ROOT/.git" ] && [ -f "$REPO_ROOT/.envrc" ] && [ -d "$REPO_ROOT/cli" ]; then
+        PATH_add "$REPO_ROOT/cli"
+        break
+    fi
+    REPO_ROOT=$(dirname "$REPO_ROOT")
+done
 EOF
     fi
     
