@@ -1,8 +1,4 @@
-import {
-  type sendUnaryData,
-  type ServerUnaryCall,
-  status,
-} from "@grpc/grpc-js";
+import { type sendUnaryData, type ServerUnaryCall, status } from '@grpc/grpc-js'
 import {
   GetProductRequest,
   GetProductResponse,
@@ -18,12 +14,12 @@ import {
   GetInventoryResponse,
   Product as ProductProto,
   Inventory as InventoryProto,
-} from "../generated/product.js";
+} from '../generated/product.js'
 import {
   ProductRepository,
   type Product,
   type Inventory,
-} from "../data/products.js";
+} from '../data/products.js'
 
 function productToProto(product: Product): ProductProto {
   return {
@@ -35,7 +31,7 @@ function productToProto(product: Product): ProductProto {
     sku: product.sku,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
-  };
+  }
 }
 
 function inventoryToProto(inv: Inventory): InventoryProto {
@@ -44,94 +40,94 @@ function inventoryToProto(inv: Inventory): InventoryProto {
     quantity: inv.quantity,
     warehouseId: inv.warehouseId,
     lastRestocked: inv.lastRestocked,
-  };
+  }
 }
 
 // Error handling utilities
 function validateId<T extends {}>(
   id: string,
-  callback: sendUnaryData<T>
+  callback: sendUnaryData<T>,
 ): boolean {
   if (!id) {
     callback({
       code: status.INVALID_ARGUMENT,
-      details: "Product ID is required",
-    });
-    return false;
+      details: 'Product ID is required',
+    })
+    return false
   }
-  return true;
+  return true
 }
 
 function handleNotFound<T extends {}>(
   id: string,
-  callback: sendUnaryData<T>
+  callback: sendUnaryData<T>,
 ): void {
   callback({
     code: status.NOT_FOUND,
     details: `Product with ID ${id} not found`,
-  });
+  })
 }
 
 export const productServiceImplementation = {
   getProduct: (
     call: ServerUnaryCall<GetProductRequest, GetProductResponse>,
-    callback: sendUnaryData<GetProductResponse>
+    callback: sendUnaryData<GetProductResponse>,
   ) => {
-    const id = call.request.id;
-    if (!validateId(id, callback)) return;
+    const id = call.request.id
+    if (!validateId(id, callback)) return
 
-    const product = ProductRepository.getById(id);
+    const product = ProductRepository.getById(id)
     if (!product) {
-      return handleNotFound(id, callback);
+      return handleNotFound(id, callback)
     }
 
     const response: GetProductResponse = {
       product: productToProto(product),
-    };
-    callback(null, response);
+    }
+    callback(null, response)
   },
 
   listProducts: (
     call: ServerUnaryCall<ListProductsRequest, ListProductsResponse>,
-    callback: sendUnaryData<ListProductsResponse>
+    callback: sendUnaryData<ListProductsResponse>,
   ) => {
-    const pageSize = call.request.pageSize || 10;
-    const pageToken = call.request.pageToken || "";
-    const category = call.request.category || undefined;
-    const minPrice = call.request.minPrice || undefined;
-    const maxPrice = call.request.maxPrice || undefined;
+    const pageSize = call.request.pageSize || 10
+    const pageToken = call.request.pageToken || ''
+    const category = call.request.category || undefined
+    const minPrice = call.request.minPrice || undefined
+    const maxPrice = call.request.maxPrice || undefined
 
     const result = ProductRepository.paginate(
       pageSize,
       pageToken,
       category,
       minPrice,
-      maxPrice
-    );
+      maxPrice,
+    )
     const response: ListProductsResponse = {
       products: result.products.map(productToProto),
       nextPageToken: result.nextPageToken,
       totalCount: result.totalCount,
-    };
+    }
 
-    callback(null, response);
+    callback(null, response)
   },
 
   createProduct: (
     call: ServerUnaryCall<CreateProductRequest, CreateProductResponse>,
-    callback: sendUnaryData<CreateProductResponse>
+    callback: sendUnaryData<CreateProductResponse>,
   ) => {
-    const name = call.request.name;
-    const description = call.request.description;
-    const price = call.request.price;
-    const category = call.request.category;
-    const sku = call.request.sku;
+    const name = call.request.name
+    const description = call.request.description
+    const price = call.request.price
+    const category = call.request.category
+    const sku = call.request.sku
 
     if (!name || !description || !price || !category || !sku) {
       return callback({
         code: status.INVALID_ARGUMENT,
-        details: "Name, description, price, category, and SKU are required",
-      });
+        details: 'Name, description, price, category, and SKU are required',
+      })
     }
 
     const product = ProductRepository.create({
@@ -140,78 +136,78 @@ export const productServiceImplementation = {
       price,
       category,
       sku,
-    });
+    })
     const response: CreateProductResponse = {
       product: productToProto(product),
-    };
+    }
 
-    callback(null, response);
+    callback(null, response)
   },
 
   updateProduct: (
     call: ServerUnaryCall<UpdateProductRequest, UpdateProductResponse>,
-    callback: sendUnaryData<UpdateProductResponse>
+    callback: sendUnaryData<UpdateProductResponse>,
   ) => {
-    const id = call.request.id;
-    const name = call.request.name;
-    const description = call.request.description;
-    const price = call.request.price;
-    const category = call.request.category;
+    const id = call.request.id
+    const name = call.request.name
+    const description = call.request.description
+    const price = call.request.price
+    const category = call.request.category
 
-    if (!validateId(id, callback)) return;
+    if (!validateId(id, callback)) return
 
-    const updateData: Partial<Omit<Product, "id" | "createdAt">> = {};
-    if (name) updateData.name = name;
-    if (description) updateData.description = description;
-    if (price) updateData.price = price;
-    if (category) updateData.category = category;
+    const updateData: Partial<Omit<Product, 'id' | 'createdAt'>> = {}
+    if (name) updateData.name = name
+    if (description) updateData.description = description
+    if (price) updateData.price = price
+    if (category) updateData.category = category
 
-    const product = ProductRepository.update(id, updateData);
+    const product = ProductRepository.update(id, updateData)
     if (!product) {
-      return handleNotFound(id, callback);
+      return handleNotFound(id, callback)
     }
 
     const response: UpdateProductResponse = {
       product: productToProto(product),
-    };
+    }
 
-    callback(null, response);
+    callback(null, response)
   },
 
   deleteProduct: (
     call: ServerUnaryCall<DeleteProductRequest, DeleteProductResponse>,
-    callback: sendUnaryData<DeleteProductResponse>
+    callback: sendUnaryData<DeleteProductResponse>,
   ) => {
-    const id = call.request.id;
-    if (!validateId(id, callback)) return;
+    const id = call.request.id
+    if (!validateId(id, callback)) return
 
-    const success = ProductRepository.delete(id);
+    const success = ProductRepository.delete(id)
     if (!success) {
-      return handleNotFound(id, callback);
+      return handleNotFound(id, callback)
     }
 
     const response: DeleteProductResponse = {
       success: true,
-    };
+    }
 
-    callback(null, response);
+    callback(null, response)
   },
 
   getInventory: (
     call: ServerUnaryCall<GetInventoryRequest, GetInventoryResponse>,
-    callback: sendUnaryData<GetInventoryResponse>
+    callback: sendUnaryData<GetInventoryResponse>,
   ) => {
-    const productId = call.request.productId;
-    if (!validateId(productId, callback)) return;
+    const productId = call.request.productId
+    if (!validateId(productId, callback)) return
 
-    const inventoryItems = ProductRepository.getInventory(productId);
-    const totalQuantity = ProductRepository.getTotalQuantity(productId);
+    const inventoryItems = ProductRepository.getInventory(productId)
+    const totalQuantity = ProductRepository.getTotalQuantity(productId)
 
     const response: GetInventoryResponse = {
       inventory: inventoryItems.map(inventoryToProto),
       totalQuantity: totalQuantity,
-    };
+    }
 
-    callback(null, response);
+    callback(null, response)
   },
-};
+}

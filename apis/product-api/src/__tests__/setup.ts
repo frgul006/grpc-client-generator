@@ -1,15 +1,15 @@
 // Test setup for product-service
-import { vi } from 'vitest';
+import { vi } from 'vitest'
 
 // Mock the gRPC library
 vi.mock('@grpc/grpc-js', () => ({
   Server: vi.fn().mockImplementation(() => ({
     addService: vi.fn(),
     bindAsync: vi.fn(),
-    start: vi.fn()
+    start: vi.fn(),
   })),
   ServerCredentials: {
-    createInsecure: vi.fn(() => 'mock-insecure-credentials')
+    createInsecure: vi.fn(() => 'mock-insecure-credentials'),
   },
   status: {
     OK: 0,
@@ -28,20 +28,20 @@ vi.mock('@grpc/grpc-js', () => ({
     INTERNAL: 13,
     UNAVAILABLE: 14,
     DATA_LOSS: 15,
-    UNAUTHENTICATED: 16
-  }
-}));
+    UNAUTHENTICATED: 16,
+  },
+}))
 
 // Mock console methods for cleaner test output
-const originalConsole = { ...console };
+const originalConsole = { ...console }
 
 export function mockConsole() {
-  console.log = vi.fn();
-  console.error = vi.fn();
-  console.warn = vi.fn();
-  console.info = vi.fn();
+  console.log = vi.fn()
+  console.error = vi.fn()
+  console.warn = vi.fn()
+  console.info = vi.fn()
 }
 
 export function restoreConsole() {
-  Object.assign(console, originalConsole);
+  Object.assign(console, originalConsole)
 }
