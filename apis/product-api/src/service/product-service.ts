@@ -1,4 +1,8 @@
-import { sendUnaryData, ServerUnaryCall, status } from "@grpc/grpc-js";
+import {
+  type sendUnaryData,
+  type ServerUnaryCall,
+  status,
+} from "@grpc/grpc-js";
 import {
   GetProductRequest,
   GetProductResponse,
@@ -15,7 +19,11 @@ import {
   Product as ProductProto,
   Inventory as InventoryProto,
 } from "../generated/product.js";
-import { ProductRepository, Product, Inventory } from "../data/products.js";
+import {
+  ProductRepository,
+  type Product,
+  type Inventory,
+} from "../data/products.js";
 
 function productToProto(product: Product): ProductProto {
   return {
