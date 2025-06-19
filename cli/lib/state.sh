@@ -14,8 +14,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 # CONFIGURATION VARIABLES
 # =============================================================================
 
-# State file for tracking setup progress
-STATE_FILE="${STATE_FILE:-"$REPO_ROOT/.setup_state"}"
+# State file for tracking setup progress (will be set after REPO_ROOT is available)
+STATE_FILE=""
 
 # Current step being executed (for error handling)
 CURRENT_STEP=""
@@ -36,6 +36,11 @@ TOOL_INSTALL_TIMEOUT=300
 # =============================================================================
 # CORE STATE MANAGEMENT FUNCTIONS
 # =============================================================================
+
+# Initialize state file path (called after REPO_ROOT is available)
+init_state_file() {
+    STATE_FILE="${STATE_FILE:-"$REPO_ROOT/.setup_state"}"
+}
 
 # Atomically set checkpoint status
 set_checkpoint() {

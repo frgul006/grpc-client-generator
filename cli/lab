@@ -52,8 +52,8 @@ if ! REPO_ROOT=$(find_repo_root); then
     exit 1
 fi
 
-# Set up state file path
-STATE_FILE="$REPO_ROOT/.setup_state"
+# Initialize state management
+init_state_file
 
 # Initialize error handling
 setup_error_handlers
