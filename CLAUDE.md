@@ -9,6 +9,15 @@
 - Prefer `const` over `let`, never use `var`
 - Test names: use descriptive phrases, avoid "should"
 
+### Shell Scripting Guidelines
+- Use `set -Eeuo pipefail` for strict error handling in all scripts
+- Use `sleep` instead of `timeout` command (timeout doesn't work as expected on macOS)
+- Source modules in dependency order (utilities first, then dependent modules)
+- Initialize variables after all modules are loaded
+- Use `"$variable"` quoting for all variable expansions
+- Use `mktemp -d` for temporary directories, always clean up with `rm -rf`
+- For modular scripts, use initialization functions rather than inline variable assignment
+
 ## Rules
 
 - Always test package.json scripts after adding them
@@ -16,9 +25,13 @@
 - **CRITICAL**: Create TodoWrite items for documentation updates to ensure they're not forgotten
 - **MANDATORY**: NEVER create git commits without using mcp**zen**precommit first
 - **MANDATORY**: Always run mcp**zen**precommit before claiming any coding task is "done" or "complete"
+- **MANDATORY**: When precommit identifies test failures or warnings, validate that tests use the exact same commands as real workflows
+- **MANDATORY**: Never accept "degraded" test results without verifying the test actually works - run the test commands manually to confirm
+- **CRITICAL**: Test functions must use identical commands to the real workflows they validate
+- **CRITICAL**: Before committing, manually verify test commands work by running them in the actual environment
+- **CRITICAL**: Test function parameters (flags, options, paths) must exactly match production usage
 - Progress documentation is MANDATORY - the user will verify this was done
 - Use zen and context7 tools for complex technical challenges
-- **Shell scripting**: Use `sleep` instead of `timeout` command (timeout doesn't work as expected on macOS)
 
 ## Ticketing System
 
@@ -98,3 +111,24 @@ Create a ticket ONLY if the improvement:
 - Looking for best practices and examples
 - Researching how to use specific tools
 - When web search isn't sufficient for technical details
+
+## Systematic Debugging for Shell Scripts
+
+When shell scripts fail, follow this debugging methodology:
+
+### Variable Scoping Issues
+1. Check if variables are defined before use with `set -u` enabled
+2. Verify sourcing order - variables must be defined before modules that use them
+3. Use `declare -p VARIABLE_NAME` to check if variables exist and their values
+4. For modular scripts, ensure initialization functions are called after dependencies are loaded
+
+### Module Dependencies
+1. Map out which modules depend on which variables/functions
+2. Source modules in dependency order (common utilities first, then dependent modules)
+3. Initialize variables after all modules are loaded but before functions are called
+4. Use initialization functions rather than inline variable assignment in sourced files
+
+### Common Patterns
+- **REPO_ROOT issues**: Always set REPO_ROOT before sourcing modules that use it
+- **Function not found**: Check if the module containing the function was actually sourced
+- **Unbound variable**: Enable `set -u` and check variable initialization order
