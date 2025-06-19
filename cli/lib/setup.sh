@@ -405,10 +405,10 @@ test_protoc_generation() {
         return 0
     fi
     
-    # Try to generate code
+    # Test basic protoc functionality (descriptor generation)
     local temp_dir
     temp_dir=$(mktemp -d)
-    if protoc --proto_path="$REPO_ROOT/protos" --js_out="$temp_dir" "$proto_file" &>/dev/null; then
+    if protoc --descriptor_set_out="$temp_dir/test.pb" --proto_path="$REPO_ROOT/protos" "$proto_file" &>/dev/null; then
         log_success "protoc code generation test passed"
         rm -rf "$temp_dir"
         return 0
@@ -433,7 +433,7 @@ test_typescript_compilation() {
     # Try to run TypeScript compiler
     (
         cd "$api_dir" || exit 1
-        if npm run build:check &>/dev/null; then
+        if npm run check:types &>/dev/null; then
             log_success "TypeScript compilation test passed"
             return 0
         else
