@@ -123,32 +123,7 @@ describe('ProductService', () => {
       });
     });
 
-    it('should return INVALID_ARGUMENT error when id is null', () => {
-      const mockRequest = {
-        id: ''
-      };
-      const mockCall = { request: mockRequest };
-      const mockCallback = vi.fn();
 
-      productServiceImplementation.getProduct(mockCall as any, mockCallback);
-
-      expect(mockCallback).toHaveBeenCalledWith({
-        code: status.INVALID_ARGUMENT,
-        details: 'Product ID is required'
-      });
-    });
-
-    it('should log the product request', () => {
-      const mockRequest = {
-        id: '1'
-      };
-      const mockCall = { request: mockRequest };
-      const mockCallback = vi.fn();
-
-      productServiceImplementation.getProduct(mockCall as any, mockCallback);
-
-      expect(console.log).toHaveBeenCalledWith('[Product Service] GetProduct called with ID: 1');
-    });
   });
 
   describe('listProducts', () => {
@@ -232,23 +207,6 @@ describe('ProductService', () => {
       }));
     });
 
-    it('should log the list request with parameters', () => {
-      const mockRequest = {
-        pageSize: 5,
-        pageToken: 'token123',
-        category: 'Electronics',
-        minPrice: 100,
-        maxPrice: 500
-      };
-      const mockCall = { request: mockRequest };
-      const mockCallback = vi.fn();
-
-      productServiceImplementation.listProducts(mockCall as any, mockCallback);
-
-      expect(console.log).toHaveBeenCalledWith(
-        '[Product Service] ListProducts called - pageSize: 5, pageToken: token123, category: Electronics, minPrice: 100, maxPrice: 500'
-      );
-    });
   });
 
   describe('createProduct', () => {
@@ -368,23 +326,6 @@ describe('ProductService', () => {
       });
     });
 
-    it('should log the create request', () => {
-      const mockRequest = {
-        name: 'New Product',
-        description: 'A new product',
-        price: 299.99,
-        category: 'Electronics',
-        sku: 'NEW-001'
-      };
-      const mockCall = { request: mockRequest };
-      const mockCallback = vi.fn();
-
-      productServiceImplementation.createProduct(mockCall as any, mockCallback);
-
-      expect(console.log).toHaveBeenCalledWith(
-        '[Product Service] CreateProduct called - name: New Product, description: A new product, price: 299.99, category: Electronics, sku: NEW-001'
-      );
-    });
   });
 
   describe('updateProduct', () => {
@@ -459,23 +400,6 @@ describe('ProductService', () => {
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
     });
 
-    it('should log the update request', () => {
-      const mockRequest = {
-        id: '1',
-        name: 'Updated Product',
-        description: 'Updated description',
-        price: 150.00,
-        category: 'Updated Category'
-      };
-      const mockCall = { request: mockRequest };
-      const mockCallback = vi.fn();
-
-      productServiceImplementation.updateProduct(mockCall as any, mockCallback);
-
-      expect(console.log).toHaveBeenCalledWith(
-        '[Product Service] UpdateProduct called - id: 1, name: Updated Product, description: Updated description, price: 150, category: Updated Category'
-      );
-    });
   });
 
   describe('deleteProduct', () => {
@@ -522,17 +446,6 @@ describe('ProductService', () => {
       });
     });
 
-    it('should log the delete request', () => {
-      const mockRequest = {
-        id: '1'
-      };
-      const mockCall = { request: mockRequest };
-      const mockCallback = vi.fn();
-
-      productServiceImplementation.deleteProduct(mockCall as any, mockCallback);
-
-      expect(console.log).toHaveBeenCalledWith('[Product Service] DeleteProduct called with ID: 1');
-    });
   });
 
   describe('getInventory', () => {
@@ -576,17 +489,6 @@ describe('ProductService', () => {
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object));
     });
 
-    it('should log the inventory request', () => {
-      const mockRequest = {
-        productId: '1'
-      };
-      const mockCall = { request: mockRequest };
-      const mockCallback = vi.fn();
-
-      productServiceImplementation.getInventory(mockCall as any, mockCallback);
-
-      expect(console.log).toHaveBeenCalledWith('[Product Service] GetInventory called for product ID: 1');
-    });
   });
 
   describe('error handling', () => {

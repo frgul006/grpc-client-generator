@@ -8,6 +8,7 @@
 - Use type aliases over interfaces for object shapes
 - Prefer `const` over `let`, never use `var`
 - Test names: use descriptive phrases, avoid "should"
+- **FORBIDDEN**: Using `any` is strictly forbidden
 
 ### Shell Scripting Guidelines
 - Use `set -Eeuo pipefail` for strict error handling in all scripts

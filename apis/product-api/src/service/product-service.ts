@@ -1,8 +1,8 @@
-import { sendUnaryData, ServerUnaryCall, status } from '@grpc/grpc-js';
-import { 
-  GetProductRequest, 
-  GetProductResponse, 
-  ListProductsRequest, 
+import { sendUnaryData, ServerUnaryCall, status } from "@grpc/grpc-js";
+import {
+  GetProductRequest,
+  GetProductResponse,
+  ListProductsRequest,
   ListProductsResponse,
   CreateProductRequest,
   CreateProductResponse,
@@ -13,9 +13,9 @@ import {
   GetInventoryRequest,
   GetInventoryResponse,
   Product as ProductProto,
-  Inventory as InventoryProto
-} from '../generated/product.js';
-import { ProductRepository, Product, Inventory } from '../data/products.js';
+  Inventory as InventoryProto,
+} from "../generated/product.js";
+import { ProductRepository, Product, Inventory } from "../data/products.js";
 
 function productToProto(product: Product): ProductProto {
   return {
@@ -39,92 +39,120 @@ function inventoryToProto(inv: Inventory): InventoryProto {
   };
 }
 
+// Error handling utilities
+function validateId<T extends {}>(
+  id: string,
+  callback: sendUnaryData<T>
+): boolean {
+  if (!id) {
+    callback({
+      code: status.INVALID_ARGUMENT,
+      details: "Product ID is required",
+    });
+    return false;
+  }
+  return true;
+}
+
+function handleNotFound<T extends {}>(
+  id: string,
+  callback: sendUnaryData<T>
+): void {
+  callback({
+    code: status.NOT_FOUND,
+    details: `Product with ID ${id} not found`,
+  });
+}
+
 export const productServiceImplementation = {
-  getProduct: (call: ServerUnaryCall<GetProductRequest, GetProductResponse>, callback: sendUnaryData<GetProductResponse>) => {
+  getProduct: (
+    call: ServerUnaryCall<GetProductRequest, GetProductResponse>,
+    callback: sendUnaryData<GetProductResponse>
+  ) => {
     const id = call.request.id;
-    console.log(`[Product Service] GetProduct called with ID: ${id}`);
-    
-    if (!id) {
-      return callback({
-        code: status.INVALID_ARGUMENT,
-        details: 'Product ID is required'
-      });
-    }
+    if (!validateId(id, callback)) return;
 
     const product = ProductRepository.getById(id);
     if (!product) {
-      return callback({
-        code: status.NOT_FOUND,
-        details: `Product with ID ${id} not found`
-      });
+      return handleNotFound(id, callback);
     }
 
     const response: GetProductResponse = {
-      product: productToProto(product)
+      product: productToProto(product),
     };
     callback(null, response);
   },
 
-  listProducts: (call: ServerUnaryCall<ListProductsRequest, ListProductsResponse>, callback: sendUnaryData<ListProductsResponse>) => {
+  listProducts: (
+    call: ServerUnaryCall<ListProductsRequest, ListProductsResponse>,
+    callback: sendUnaryData<ListProductsResponse>
+  ) => {
     const pageSize = call.request.pageSize || 10;
-    const pageToken = call.request.pageToken || '';
+    const pageToken = call.request.pageToken || "";
     const category = call.request.category || undefined;
     const minPrice = call.request.minPrice || undefined;
     const maxPrice = call.request.maxPrice || undefined;
-    
-    console.log(`[Product Service] ListProducts called - pageSize: ${pageSize}, pageToken: ${pageToken}, category: ${category}, minPrice: ${minPrice}, maxPrice: ${maxPrice}`);
 
-    const result = ProductRepository.paginate(pageSize, pageToken, category, minPrice, maxPrice);
+    const result = ProductRepository.paginate(
+      pageSize,
+      pageToken,
+      category,
+      minPrice,
+      maxPrice
+    );
     const response: ListProductsResponse = {
       products: result.products.map(productToProto),
       nextPageToken: result.nextPageToken,
-      totalCount: result.totalCount
+      totalCount: result.totalCount,
     };
-    
+
     callback(null, response);
   },
 
-  createProduct: (call: ServerUnaryCall<CreateProductRequest, CreateProductResponse>, callback: sendUnaryData<CreateProductResponse>) => {
+  createProduct: (
+    call: ServerUnaryCall<CreateProductRequest, CreateProductResponse>,
+    callback: sendUnaryData<CreateProductResponse>
+  ) => {
     const name = call.request.name;
     const description = call.request.description;
     const price = call.request.price;
     const category = call.request.category;
     const sku = call.request.sku;
-    
-    console.log(`[Product Service] CreateProduct called - name: ${name}, description: ${description}, price: ${price}, category: ${category}, sku: ${sku}`);
 
     if (!name || !description || !price || !category || !sku) {
       return callback({
         code: status.INVALID_ARGUMENT,
-        details: 'Name, description, price, category, and SKU are required'
+        details: "Name, description, price, category, and SKU are required",
       });
     }
 
-    const product = ProductRepository.create({ name, description, price, category, sku });
+    const product = ProductRepository.create({
+      name,
+      description,
+      price,
+      category,
+      sku,
+    });
     const response: CreateProductResponse = {
-      product: productToProto(product)
+      product: productToProto(product),
     };
-    
+
     callback(null, response);
   },
 
-  updateProduct: (call: ServerUnaryCall<UpdateProductRequest, UpdateProductResponse>, callback: sendUnaryData<UpdateProductResponse>) => {
+  updateProduct: (
+    call: ServerUnaryCall<UpdateProductRequest, UpdateProductResponse>,
+    callback: sendUnaryData<UpdateProductResponse>
+  ) => {
     const id = call.request.id;
     const name = call.request.name;
     const description = call.request.description;
     const price = call.request.price;
     const category = call.request.category;
-    
-    console.log(`[Product Service] UpdateProduct called - id: ${id}, name: ${name}, description: ${description}, price: ${price}, category: ${category}`);
 
-    if (!id) {
-      return callback({
-        code: status.INVALID_ARGUMENT,
-        details: 'Product ID is required'
-      });
-    }
+    if (!validateId(id, callback)) return;
 
-    const updateData: Partial<Omit<Product, 'id' | 'createdAt'>> = {};
+    const updateData: Partial<Omit<Product, "id" | "createdAt">> = {};
     if (name) updateData.name = name;
     if (description) updateData.description = description;
     if (price) updateData.price = price;
@@ -132,64 +160,50 @@ export const productServiceImplementation = {
 
     const product = ProductRepository.update(id, updateData);
     if (!product) {
-      return callback({
-        code: status.NOT_FOUND,
-        details: `Product with ID ${id} not found`
-      });
+      return handleNotFound(id, callback);
     }
 
     const response: UpdateProductResponse = {
-      product: productToProto(product)
+      product: productToProto(product),
     };
-    
+
     callback(null, response);
   },
 
-  deleteProduct: (call: ServerUnaryCall<DeleteProductRequest, DeleteProductResponse>, callback: sendUnaryData<DeleteProductResponse>) => {
+  deleteProduct: (
+    call: ServerUnaryCall<DeleteProductRequest, DeleteProductResponse>,
+    callback: sendUnaryData<DeleteProductResponse>
+  ) => {
     const id = call.request.id;
-    console.log(`[Product Service] DeleteProduct called with ID: ${id}`);
-    
-    if (!id) {
-      return callback({
-        code: status.INVALID_ARGUMENT,
-        details: 'Product ID is required'
-      });
-    }
+    if (!validateId(id, callback)) return;
 
     const success = ProductRepository.delete(id);
     if (!success) {
-      return callback({
-        code: status.NOT_FOUND,
-        details: `Product with ID ${id} not found`
-      });
+      return handleNotFound(id, callback);
     }
 
     const response: DeleteProductResponse = {
-      success: true
+      success: true,
     };
-    
+
     callback(null, response);
   },
 
-  getInventory: (call: ServerUnaryCall<GetInventoryRequest, GetInventoryResponse>, callback: sendUnaryData<GetInventoryResponse>) => {
+  getInventory: (
+    call: ServerUnaryCall<GetInventoryRequest, GetInventoryResponse>,
+    callback: sendUnaryData<GetInventoryResponse>
+  ) => {
     const productId = call.request.productId;
-    console.log(`[Product Service] GetInventory called for product ID: ${productId}`);
-    
-    if (!productId) {
-      return callback({
-        code: status.INVALID_ARGUMENT,
-        details: 'Product ID is required'
-      });
-    }
+    if (!validateId(productId, callback)) return;
 
     const inventoryItems = ProductRepository.getInventory(productId);
     const totalQuantity = ProductRepository.getTotalQuantity(productId);
 
     const response: GetInventoryResponse = {
       inventory: inventoryItems.map(inventoryToProto),
-      totalQuantity: totalQuantity
+      totalQuantity: totalQuantity,
     };
-    
+
     callback(null, response);
-  }
+  },
 };
