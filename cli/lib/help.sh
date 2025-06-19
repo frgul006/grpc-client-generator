@@ -1,0 +1,271 @@
+#!/bin/bash
+set -Eeuo pipefail
+# =============================================================================
+# HELP SYSTEM MODULE
+# =============================================================================
+# This module contains all help text and help display functions for the Lab CLI.
+
+# =============================================================================
+# COMMAND-SPECIFIC HELP FUNCTIONS
+# =============================================================================
+
+# Show command-specific help
+show_command_help() {
+    local cmd="$1"
+    case "$cmd" in
+        setup)
+            show_setup_help
+            ;;
+        status)
+            show_status_help
+            ;;
+        cleanup)
+            show_cleanup_help
+            ;;
+        version)
+            show_version_help
+            ;;
+        resume)
+            show_resume_help
+            ;;
+        reset)
+            show_reset_help
+            ;;
+        help)
+            show_help
+            ;;
+        *)
+            log_error "Unknown command: '$cmd'"
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+show_setup_help() {
+    cat << 'EOF'
+🧪 Lab Setup - Development Environment Setup
+
+USAGE:
+    lab setup [OPTIONS]
+
+DESCRIPTION:
+    Sets up the complete gRPC development environment including tools,
+    Docker services, and configuration.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --keep-state    Preserve setup state file after completion
+    --help          Show this help message
+
+SETUP PROCESS:
+    • Install development tools (grpcurl, grpcui, protoc, direnv)
+    • Set up Docker network and Verdaccio registry
+    • Validate Node.js environment and dependencies
+    • Configure direnv for 'lab' command shortcut
+    • Run environment smoke tests
+
+EXAMPLES:
+    lab setup                    # Standard setup
+    lab setup --verbose          # Setup with debug output
+    lab setup --keep-state       # Setup and keep state file
+
+RECOVERY:
+    If setup fails, use 'lab resume' to continue from last checkpoint
+    or 'lab reset' to start fresh.
+EOF
+}
+
+show_status_help() {
+    cat << 'EOF'
+📊 Lab Status - Environment Status Check
+
+USAGE:
+    lab status [OPTIONS]
+
+DESCRIPTION:
+    Shows the current status of development environment components
+    including services, tools, and project state.
+
+OPTIONS:
+    --help          Show this help message
+
+STATUS CHECKS:
+    • Docker network and Verdaccio registry status
+    • Port availability (4873, 50052)
+    • Project dependencies and configuration
+    • Development tool installations
+    • Setup progress and state
+
+EXAMPLES:
+    lab status                   # Show environment status
+EOF
+}
+
+show_cleanup_help() {
+    cat << 'EOF'
+🧹 Lab Cleanup - Environment Cleanup
+
+USAGE:
+    lab cleanup [OPTIONS]
+
+DESCRIPTION:
+    Stops all running services and cleans up the development environment.
+    This will stop Docker containers but preserve installed tools.
+
+OPTIONS:
+    --help          Show this help message
+
+CLEANUP ACTIONS:
+    • Stop Verdaccio registry container
+    • Remove Docker network (if not in use)
+    • Clean up temporary files
+    • Preserve installed development tools
+
+EXAMPLES:
+    lab cleanup                  # Clean up environment
+EOF
+}
+
+show_version_help() {
+    cat << 'EOF'
+🔖 Lab Version - Tool Version Information
+
+USAGE:
+    lab version [OPTIONS]
+
+DESCRIPTION:
+    Shows version information for all development tools and
+    environment components.
+
+OPTIONS:
+    --help          Show this help message
+
+VERSION INFO:
+    • Lab CLI version
+    • Development tools (grpcurl, grpcui, protoc)
+    • Runtime versions (Node.js, Docker)
+    • Environment details
+
+EXAMPLES:
+    lab version                  # Show all version information
+EOF
+}
+
+show_resume_help() {
+    cat << 'EOF'
+▶️ Lab Resume - Resume Failed Setup
+
+USAGE:
+    lab resume [OPTIONS]
+
+DESCRIPTION:
+    Resumes setup from the last successful checkpoint. Use this when
+    setup fails or is interrupted to continue from where it left off.
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --keep-state    Preserve setup state file after completion
+    --help          Show this help message
+
+RESUME PROCESS:
+    • Loads previous setup state
+    • Validates system consistency
+    • Continues from last successful step
+    • Skips already completed steps
+
+EXAMPLES:
+    lab resume                   # Resume from last checkpoint
+    lab resume --verbose         # Resume with debug output
+
+NOTES:
+    • Requires a previous setup attempt with state file
+    • Use 'lab status' to check current state
+    • Use 'lab reset' if you want to start completely fresh
+EOF
+}
+
+show_reset_help() {
+    cat << 'EOF'
+🔄 Lab Reset - Clear Setup State
+
+USAGE:
+    lab reset [OPTIONS]
+
+DESCRIPTION:
+    Clears all setup checkpoints and state, forcing a fresh start
+    on the next setup attempt.
+
+OPTIONS:
+    --help          Show this help message
+
+RESET ACTIONS:
+    • Removes setup state file
+    • Clears all checkpoints
+    • Forces fresh setup on next run
+    • Does not affect installed tools or services
+
+EXAMPLES:
+    lab reset                    # Clear all setup state
+
+NOTES:
+    • Use this when setup state becomes inconsistent
+    • After reset, next 'lab setup' will start from beginning
+    • Installed tools and services remain intact
+EOF
+}
+
+# =============================================================================
+# MAIN HELP FUNCTION
+# =============================================================================
+
+show_help() {
+    cat << 'EOF'
+🧪 Lab - gRPC Development Environment CLI
+
+USAGE:
+    lab <command> [options]
+    lab [--help]
+
+COMMANDS:
+    setup           Run the development environment setup
+    status          Show current status of services and tools
+    version         Show version information for all tools
+    cleanup         Stop all services and clean up
+    resume          Resume setup from last successful checkpoint
+    reset           Clear all checkpoints and start fresh
+    help            Show this help message
+
+GLOBAL OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+COMMAND-SPECIFIC OPTIONS:
+    setup:
+      --keep-state  Preserve setup state file after completion
+
+EXAMPLES:
+    lab help                     # Show this help
+    lab setup                    # Run development environment setup
+    lab setup --verbose          # Setup with debug output
+    lab setup --keep-state       # Setup with persistent state file
+    lab status                   # Check service status
+    lab cleanup                  # Stop all services
+    lab version                  # Show tool versions
+    lab resume                   # Resume from last checkpoint
+    lab reset                    # Clear checkpoints and start fresh
+
+COMMAND HELP:
+    lab <command> --help         # Show help for specific command
+    lab help <command>           # Alternative help syntax
+
+The setup command will:
+• Install development tools (grpcurl, grpcui, protoc, direnv)
+• Set up Docker network and Verdaccio registry
+• Validate Node.js environment and dependencies
+• Configure direnv for 'lab' command shortcut
+• Run environment smoke tests
+
+After setup, you can use 'lab' from any subdirectory (requires direnv).
+EOF
+}
