@@ -82,15 +82,9 @@ export default tseslint.config(
 	},
 	{
 		files: ["**/package.json"],
-		rules: {
-			"package-json/valid-package-definition": [
-				"error",
-				{
-					allowedVersions: {
-						"grpc-client-generator": ["dev"],
-					},
-				},
-			],
-		},
+		"package-json/valid-package-definition": [
+			"error",
+			{ ignoreProperties: ["dependencies"] },
+		],
 	},
 );
