@@ -15,7 +15,7 @@
 		"check:spelling": "cspell \"**\" ",
 		"check:types": "tsc --noEmit",
 		"check:unused": "knip",
-		"dev": "chokidar './src/**/*.ts' -c 'npm run build'",
+		"dev": "chokidar './src/**/*.ts' -c 'npm run build' --initial",
 		"format": "prettier .",
 		"lint": "eslint . --max-warnings 0",
 		"lint:md": "markdownlint \"**/*.md\" --rules sentences-per-line",

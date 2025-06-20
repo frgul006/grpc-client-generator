@@ -13,6 +13,7 @@ export const generateClients = (options: GeneratorOptions) => {
 
 	for (const service of services) {
 		const { name, outputDir, protoFile } = service;
+		console.log("Hello world");
 		console.log(name, outputDir, protoFile);
 	}
 };
