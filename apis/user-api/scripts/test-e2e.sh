@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-PORT=50052
+PORT=50053
 HOST="localhost:$PORT"
 SERVICE_NAME="user.v1.UserService"
 SERVER_PID=""
