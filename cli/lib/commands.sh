@@ -16,6 +16,7 @@ parse_args() {
     COMMAND=""
     KEEP_STATE_MODE=false
     VERBOSE_MODE=false
+    COMMAND_ARGS=()
     
     # Handle special case: lab help <command>
     if [[ $# -ge 2 && "$1" == "help" && ! "$2" =~ ^-- ]]; then
@@ -46,9 +47,8 @@ parse_args() {
                 if [[ -z "$COMMAND" ]]; then
                     COMMAND="$1"
                 else
-                    log_error "Unexpected argument: $1"
-                    show_help
-                    exit 1
+                    # Store additional arguments for commands that need them
+                    COMMAND_ARGS+=("$1")
                 fi
                 shift
                 ;;
@@ -69,6 +69,19 @@ parse_args() {
             # These commands don't support --keep-state
             if [[ "$KEEP_STATE_MODE" == true ]]; then
                 log_error "Command '$COMMAND' does not support --keep-state flag"
+                exit 1
+            fi
+            ;;
+        publish)
+            # Publish command doesn't support --keep-state
+            if [[ "$KEEP_STATE_MODE" == true ]]; then
+                log_error "Command '$COMMAND' does not support --keep-state flag"
+                exit 1
+            fi
+            # Publish requires an argument
+            if [[ ${#COMMAND_ARGS[@]} -eq 0 ]]; then
+                log_error "Command '$COMMAND' requires a package name or path"
+                log_info "Usage: lab publish <package-name|path>"
                 exit 1
             fi
             ;;
@@ -133,6 +146,10 @@ handle_command() {
         setup)
             # Setup command continues to main setup logic
             # This is handled in the main script after command processing
+            ;;
+        publish)
+            # Handle publish command
+            publish_package "${COMMAND_ARGS[@]}"
             ;;
         *)
             log_error "Unknown command: '$COMMAND'"
@@ -285,6 +302,12 @@ show_status() {
         echo "• Port 50052 (gRPC): 🟡 In use"
     else
         echo "• Port 50052 (gRPC): 🟢 Available"
+    fi
+    
+    if lsof -i :50053 &>/dev/null; then
+        echo "• Port 50053 (gRPC): 🟡 In use"
+    else
+        echo "• Port 50053 (gRPC): 🟢 Available"
     fi
     
     echo

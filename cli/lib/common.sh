@@ -74,3 +74,24 @@ show_progress() {
     done
     printf "\n"
 }
+
+# Check if Verdaccio is running
+check_verdaccio_running() {
+    # Check if Docker is available
+    if ! command -v docker &>/dev/null; then
+        return 1
+    fi
+    
+    # Check if Verdaccio container is running
+    local verdaccio_container
+    verdaccio_container=$(docker ps --format "{{.Names}}" | grep "verdaccio" | head -n1)
+    
+    if [ -n "$verdaccio_container" ]; then
+        # Verdaccio container is running, check if it's accessible
+        if curl -s -o /dev/null -w "%{http_code}" "${VERDACCIO_URL:-http://localhost:4873}" | grep -q "200"; then
+            return 0
+        fi
+    fi
+    
+    return 1
+}

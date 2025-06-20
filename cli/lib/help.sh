@@ -31,6 +31,9 @@ show_command_help() {
         reset)
             show_reset_help
             ;;
+        publish)
+            show_publish_help
+            ;;
         help)
             show_help
             ;;
@@ -215,6 +218,50 @@ NOTES:
 EOF
 }
 
+show_publish_help() {
+    cat << 'EOF'
+📦 Lab Publish - Publish Package to Local Registry
+
+USAGE:
+    lab publish <package-name|path> [OPTIONS]
+
+DESCRIPTION:
+    Publishes a package to the local Verdaccio registry with automatic
+    version management and dependency updates.
+
+ARGUMENTS:
+    package-name    Name of the package (e.g., grpc-client-generator)
+    path            Path to the package directory
+
+OPTIONS:
+    --verbose       Enable verbose logging with debug output
+    --help          Show this help message
+
+PUBLISH PROCESS:
+    • Temporarily bumps to unique dev version (0.0.0-dev.timestamp)
+    • Builds the package (if build script exists)
+    • Publishes to local Verdaccio registry
+    • Restores original version
+    • Updates all dependent packages in the repository
+
+EXAMPLES:
+    lab publish grpc-client-generator     # Publish by package name
+    lab publish ./libs/my-package         # Publish by path
+    lab publish apis/user-api --verbose   # Publish with debug output
+
+REQUIREMENTS:
+    • Verdaccio must be running (use 'lab setup' first)
+    • Package must have a valid package.json
+    • Package must be within the repository
+
+NOTES:
+    • Published packages use dev tag in registry
+    • Original version is always restored after publish
+    • All packages depending on the published package are updated
+    • Updates use the local registry (http://localhost:4873)
+EOF
+}
+
 # =============================================================================
 # MAIN HELP FUNCTION
 # =============================================================================
@@ -234,6 +281,7 @@ COMMANDS:
     cleanup         Stop all services and clean up
     resume          Resume setup from last successful checkpoint
     reset           Clear all checkpoints and start fresh
+    publish         Publish package to local registry
     help            Show this help message
 
 GLOBAL OPTIONS:
@@ -254,6 +302,7 @@ EXAMPLES:
     lab version                  # Show tool versions
     lab resume                   # Resume from last checkpoint
     lab reset                    # Clear checkpoints and start fresh
+    lab publish grpc-client-generator  # Publish package to local registry
 
 COMMAND HELP:
     lab <command> --help         # Show help for specific command

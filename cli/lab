@@ -35,6 +35,7 @@ source_module "state.sh"     # State management, error recovery
 source_module "help.sh"      # Help system and documentation
 source_module "commands.sh"  # Command parsing and handlers
 source_module "setup.sh"     # Setup operations and validation
+source_module "publish.sh"   # Package publishing to local registry
 
 # =============================================================================
 # CONFIGURATION AND INITIALIZATION
@@ -44,6 +45,7 @@ source_module "setup.sh"     # Setup operations and validation
 KEEP_STATE_MODE=false
 VERBOSE_MODE=false
 NETWORK_NAME="grpc-dev-network"
+VERDACCIO_URL="http://localhost:4873"
 
 # Detect repository root and validate environment
 if ! REPO_ROOT=$(find_repo_root); then
