@@ -10,6 +10,23 @@ set -Eeuo pipefail
 # UTILITY FUNCTIONS
 # =============================================================================
 
+# _cleanup_preflight
+# This function is registered with 'trap EXIT' to ensure proper cleanup
+# of background processes (like the tail viewer) and temporary files
+# when the script exits, regardless of success or failure.
+_cleanup_preflight() {
+    if [[ -n "${tail_pid:-}" ]]; then
+        # Kill the tail process and wait for it to exit cleanly
+        { kill "$tail_pid" && wait "$tail_pid"; } 2>/dev/null || true
+        sleep 0.1  # Small delay for visual stability
+    fi
+    tput cnorm  # Restore cursor
+    if [[ -n "${temp_dir:-}" ]]; then
+        rm -rf "$temp_dir"
+    fi
+}
+
+
 # Cross-platform CPU core detection
 get_cpu_cores() {
     # Most portable method across Linux and macOS
@@ -30,14 +47,38 @@ get_cpu_cores() {
 # Single package verification function for parallel execution
 _run_single_verify() {
     local package_dir=$1
-    local package_name=$(basename "$package_dir")
     local temp_dir="$2"
+    local live_log_path="$3"  # Passed from parent
+    local package_name=$(basename "$package_dir")
     local log_file="${temp_dir}/logs/${package_name}.log"
     local results_dir="${temp_dir}/results"
     
-    # Change to directory and run verify, capturing all output
-    (cd "$package_dir" && npm run verify) > "$log_file" 2>&1
-    local exit_code=$?  # Capture exit code IMMEDIATELY after command
+    
+    # Run verify, teeing raw output to package log, then prefix for live log
+    # The subshell captures both stdout and stderr
+    # Use stdbuf if available to force unbuffered output for real-time display
+    
+    if command -v stdbuf &>/dev/null; then
+        (cd "$package_dir" && npm run verify) 2>&1 | \
+            stdbuf -o0 tee "$log_file" | \
+            stdbuf -o0 awk -v pkg="[$package_name]" '{print pkg, $0; fflush()}' >> "$live_log_path"
+    elif command -v gstdbuf &>/dev/null; then
+        # macOS with Homebrew coreutils
+        (cd "$package_dir" && npm run verify) 2>&1 | \
+            gstdbuf -o0 tee "$log_file" | \
+            gstdbuf -o0 awk -v pkg="[$package_name]" '{print pkg, $0; fflush()}' >> "$live_log_path"
+    else
+        # Fallback: use sed with platform-specific unbuffered flag
+        local sed_unbuf_flag="-u"
+        if ! sed --version 2>&1 | grep -q GNU; then
+            sed_unbuf_flag="-l"  # BSD/macOS sed
+        fi
+        (cd "$package_dir" && npm run verify) 2>&1 | \
+            tee "$log_file" | \
+            sed $sed_unbuf_flag "s/^/[$package_name] /" >> "$live_log_path"
+    fi
+    
+    local exit_code=${PIPESTATUS[0]}  # Capture exit code of 'npm run verify', not tee or awk
     
     if [[ $exit_code -eq 0 ]]; then
         # Success: create success marker and clean log
@@ -87,11 +128,31 @@ handle_preflight_command() {
     temp_dir=$(mktemp -d)
     local results_dir="${temp_dir}/results"
     local log_dir="${temp_dir}/logs"
+    local live_log="${temp_dir}/live.log"  # Define central log
     mkdir -p "$results_dir" "$log_dir"
+    touch "$live_log"  # Create the file for tailing
+    echo "Starting preflight verification..." > "$live_log"  # Initial content
+    sync  # Ensure file is flushed to disk
+    
+    tail_pid=""  # Global variable for trap access
     
     # Ensure cleanup on exit
-    trap "rm -rf \"$temp_dir\"" EXIT
+    trap '_cleanup_preflight' EXIT
     
+    # Set up live streaming output display
+    echo
+    echo "========================================"
+    echo
+    
+    # Check for unbuffering tools and warn if none available
+    if ! command -v stdbuf &>/dev/null && ! command -v gstdbuf &>/dev/null; then
+        log_warning "For optimal live log performance, consider installing coreutils: brew install coreutils"
+    fi
+    
+    # Start streaming the last 20 lines of the live log
+    tail -n 20 -f "$live_log" &
+    tail_pid=$!
+    sleep 0.5  # Give tail time to start monitoring the file
     
     # Discover packages with verify scripts
     log_info "🔍 Discovering packages with verify scripts..."
@@ -109,9 +170,7 @@ handle_preflight_command() {
         log_warning "No packages with verify scripts found"
         return 0
     fi
-    
-    log_info "📦 Found ${#packages_with_verify[@]} packages with verify scripts"
-    
+        
     # Staged execution to handle dependencies - dynamic discovery
     local producers=()
     local consumers=()
@@ -128,11 +187,13 @@ handle_preflight_command() {
     
     # Stage 1: Run producer packages sequentially
     log_info "📦 Stage 1: Verifying ${#producers[@]} core producer packages..."
+    
+    
     for pkg in "${producers[@]}"; do
         log_info "🔧 Verifying producer: $(basename "$pkg")"
         # Disable strict error handling for verification (may fail)
         set +e
-        _run_single_verify "$pkg" "$temp_dir"
+        _run_single_verify "$pkg" "$temp_dir" "$live_log"
         # Re-enable strict error handling
         set -e
         if [[ -f "${results_dir}/$(basename "$pkg").failure" ]]; then
@@ -149,11 +210,12 @@ handle_preflight_command() {
         cpu_cores=$(get_cpu_cores)
         log_info "⚡ Stage 2: Verifying ${#consumers[@]} consumer packages in parallel (${cpu_cores} cores)"
         
+        
         # Disable strict error handling for parallel execution (packages may fail)
         set +e
         printf '%s
 ' "${consumers[@]}" | \
-            xargs -P "$cpu_cores" -I {} bash -c '_run_single_verify "$@"' _ {} "$temp_dir"
+            xargs -P "$cpu_cores" -I {} bash -c '_run_single_verify "$@"' _ {} "$temp_dir" "$live_log"
         # Re-enable strict error handling
         set -e
     fi
@@ -198,6 +260,15 @@ handle_preflight_command() {
     
     echo
     echo "📈 Results: ${success_count} passed, ${failure_count} failed"
+    
+    # If tail is running, stop it before showing final results
+    if [[ -n "$tail_pid" ]]; then
+        { kill "$tail_pid" && wait "$tail_pid"; } 2>/dev/null || true
+        tail_pid=""
+        echo
+        echo "========================================"
+        echo
+    fi
     
     if [[ $overall_status -eq 0 ]]; then
         log_success "All preflight checks passed! ✅"

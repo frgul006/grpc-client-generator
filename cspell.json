@@ -1,0 +1,11 @@
+{
+	"dictionaries": ["npm", "node", "typescript", "softwareTerms", "bashWords", "bash"],
+	"ignorePaths": [
+		"CHANGELOG.md",
+		"CLAUDE.md",
+		"coverage",
+		"lib",
+		"node_modules",
+		"package-lock.json"
+	]
+}

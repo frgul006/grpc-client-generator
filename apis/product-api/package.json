@@ -17,9 +17,9 @@
     "format:check": "prettier --check .",
     "verify": "npm run lint && npm run format:check && npm run check:types && npm run build && npm run test && npm run test:e2e",
     "test:e2e": "./scripts/test-e2e.sh",
-    "generate": "rm -rf src/generated && mkdir -p src/generated && npm run generate:code && npm run generate:descriptor",
-    "generate:code": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/generated --ts_proto_opt=esModuleInterop=true,importSuffix=.js,outputServices=grpc-js --proto_path=../../protos ../../protos/product.proto",
-    "generate:descriptor": "protoc --descriptor_set_out=./src/generated/product.pb --include_imports --include_source_info --proto_path=../../protos ../../protos/product.proto"
+    "generate": "rm -rf src/generated.tmp && mkdir -p src/generated.tmp && npm run generate:code && npm run generate:descriptor && rm -rf src/generated && mv src/generated.tmp src/generated",
+    "generate:code": "protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/generated.tmp --ts_proto_opt=esModuleInterop=true,importSuffix=.js,outputServices=grpc-js --proto_path=../../protos ../../protos/product.proto",
+    "generate:descriptor": "protoc --descriptor_set_out=./src/generated.tmp/product.pb --include_imports --include_source_info --proto_path=../../protos ../../protos/product.proto"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.5.2",
