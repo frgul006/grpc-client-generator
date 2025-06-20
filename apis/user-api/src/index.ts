@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync } from 'fs'
 
-const PORT = process.env.PORT || '50052'
+const PORT = process.env.PORT || '50053'
 
 // __dirname replacement for ESM
 const __filename = fileURLToPath(import.meta.url)
