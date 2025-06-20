@@ -1,0 +1,73 @@
+{
+	"name": "grpc-client-generator",
+	"version": "0.0.1",
+	"description": "Generates gRPC clients in typescript from protobuf files with built-in features such as header forwarding, logging and error handling",
+	"type": "module",
+	"main": "lib/index.js",
+	"files": [
+		"LICENSE.md",
+		"README.md",
+		"lib/",
+		"package.json"
+	],
+	"scripts": {
+		"build": "tsup",
+		"check:spelling": "cspell \"**\" ",
+		"check:types": "tsc --noEmit",
+		"check:unused": "knip",
+		"dev": "chokidar './src/**/*.ts' -c 'npm run build'",
+		"format": "prettier .",
+		"lint": "eslint . --max-warnings 0",
+		"lint:md": "markdownlint \"**/*.md\" --rules sentences-per-line",
+		"prepare": "husky",
+		"test": "vitest run --passWithNoTests",
+		"verify": "npm run lint && npm run check:types && npm run check:unused && npm run check:spelling  && npm run build && npm run test"
+	},
+	"lint-staged": {
+		"*": "prettier --ignore-unknown --write"
+	},
+	"devDependencies": {
+		"@eslint-community/eslint-plugin-eslint-comments": "4.5.0",
+		"@eslint/js": "9.22.0",
+		"@grpc/grpc-js": "1.13.4",
+		"@release-it/conventional-changelog": "10.0.0",
+		"@types/eslint-plugin-markdown": "2.0.2",
+		"@types/node": "22.13.10",
+		"@vitest/coverage-v8": "3.0.9",
+		"@vitest/eslint-plugin": "1.1.38",
+		"chokidar-cli": "^3.0.0",
+		"console-fail-test": "0.5.0",
+		"cspell": "8.17.5",
+		"eslint": "9.22.0",
+		"eslint-plugin-jsdoc": "50.6.8",
+		"eslint-plugin-jsonc": "2.20.0",
+		"eslint-plugin-markdown": "5.1.0",
+		"eslint-plugin-n": "17.16.2",
+		"eslint-plugin-package-json": "0.29.0",
+		"eslint-plugin-perfectionist": "4.11.0",
+		"eslint-plugin-regexp": "2.7.0",
+		"eslint-plugin-yml": "1.17.0",
+		"husky": "9.1.7",
+		"knip": "5.61.2",
+		"lint-staged": "15.5.0",
+		"markdownlint": "0.37.4",
+		"markdownlint-cli": "0.44.0",
+		"prettier": "3.5.3",
+		"prettier-plugin-curly": "0.3.1",
+		"prettier-plugin-packagejson": "2.5.10",
+		"prettier-plugin-sh": "0.15.0",
+		"release-it": "18.1.2",
+		"sentences-per-line": "0.3.0",
+		"tsup": "8.4.0",
+		"typescript": "5.8.2",
+		"typescript-eslint": "8.26.1",
+		"vitest": "3.0.9"
+	},
+	"peerDependencies": {
+		"@grpc/grpc-js": "^1.13.4"
+	},
+	"packageManager": "npm@10.9.2",
+	"engines": {
+		"node": ">=18.3.0"
+	}
+}
