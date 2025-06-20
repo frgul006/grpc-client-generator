@@ -41,6 +41,8 @@ coverage/
 # Temporary files
 tmp/
 temp/
+.serena/cache
+.serena/memories
 
 # Verdaccio local registry
 verdaccio-storage/
