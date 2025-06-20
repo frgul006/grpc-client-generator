@@ -31,6 +31,9 @@ show_command_help() {
         reset)
             show_reset_help
             ;;
+        preflight)
+            show_preflight_help
+            ;;
         publish)
             show_publish_help
             ;;
@@ -218,6 +221,50 @@ NOTES:
 EOF
 }
 
+show_preflight_help() {
+    cat << 'EOF'
+🚀 Lab Preflight - Parallel Package Verification
+
+USAGE:
+    lab preflight [OPTIONS]
+
+DESCRIPTION:
+    Run 'npm run verify' for all packages in the monorepo that support it.
+    
+    This command will:
+    • Automatically discover packages with verify scripts
+    • Run verification in parallel using all CPU cores  
+    • Provide clear success/failure summary
+    • Exit with proper status codes for CI/CD integration
+
+    The verify script typically runs:
+    • Linting (eslint)
+    • Type checking (tsc)
+    • Code formatting checks (prettier)
+    • Unit tests (vitest)
+    • Build validation
+    • Other quality checks
+
+OPTIONS:
+    --verbose       Show detailed output (inherited from global flags)
+
+EXAMPLES:
+    lab preflight           # Run verification on all packages
+    lab preflight --verbose # Run with detailed logging
+
+EXIT CODES:
+    0    All verifications passed
+    1    One or more verifications failed
+
+NOTES:
+    • Requires jq for JSON parsing (install with brew install jq)
+    • Uses staged execution: producers first, then consumers in parallel
+    • Each package runs in parallel for maximum speed
+    • Failed package logs are shown automatically
+    • Perfect for pre-commit hooks and CI/CD pipelines
+EOF
+}
+
 show_publish_help() {
     cat << 'EOF'
 📦 Lab Publish - Publish Package to Local Registry
@@ -281,6 +328,7 @@ COMMANDS:
     cleanup         Stop all services and clean up
     resume          Resume setup from last successful checkpoint
     reset           Clear all checkpoints and start fresh
+    preflight       Run verify scripts in all packages (parallel)
     publish         Publish package to local registry
     help            Show this help message
 

@@ -72,6 +72,13 @@ parse_args() {
                 exit 1
             fi
             ;;
+        preflight)
+            # Preflight command doesn't support --keep-state
+            if [[ "$KEEP_STATE_MODE" == true ]]; then
+                log_error "Command '$COMMAND' does not support --keep-state flag"
+                exit 1
+            fi
+            ;;
         publish)
             # Publish command doesn't support --keep-state
             if [[ "$KEEP_STATE_MODE" == true ]]; then
@@ -146,6 +153,9 @@ handle_command() {
         setup)
             # Setup command continues to main setup logic
             # This is handled in the main script after command processing
+            ;;
+        preflight)
+            handle_preflight_command
             ;;
         publish)
             # Handle publish command
@@ -447,3 +457,5 @@ cleanup_services() {
     log_success "Environment cleanup completed"
     log_info "💡 Development tools remain installed"
 }
+
+

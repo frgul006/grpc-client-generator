@@ -69,5 +69,8 @@
 	"packageManager": "npm@10.9.2",
 	"engines": {
 		"node": ">=18.3.0"
+	},
+	"lab": {
+		"role": "producer"
 	}
 }
