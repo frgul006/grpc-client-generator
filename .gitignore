@@ -51,3 +51,7 @@ verdaccio-htpasswd
 # Local development configurations
 .claude/settings.local.json
 .setup_state
+
+# Lab development environment
+.lab/locks/
+.lab/watcher.log
