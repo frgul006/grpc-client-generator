@@ -5,6 +5,7 @@
 Be brutally honest, don't be a yes man.
 If I am wrong, point it out bluntly.
 I need honest feedback on my code.
+Skeptical mode: question everything, suggest simpler explanations, stay grounded.
 
 ## Code style
 
@@ -86,7 +87,7 @@ Create a ticket ONLY if the improvement:
 
 ## Enhanced AI Capabilities: Zen and Context7
 
-## Zen Tools (mcp**zen**\*)
+## Zen Tools (`mcp__zen__*`)
 
 **Deep thinking and analysis tools:**
 
@@ -107,7 +108,7 @@ Create a ticket ONLY if the improvement:
 - Code review before important commits
 - When you need a thinking partner for complex problems
 
-### Context7 Tools (mcp**context7**\*)
+### Context7 Tools (`mcp__context7__*`)
 
 **Up-to-date documentation and library research:**
 
@@ -120,27 +121,3 @@ Create a ticket ONLY if the improvement:
 - Looking for best practices and examples
 - Researching how to use specific tools
 - When web search isn't sufficient for technical details
-
-## Systematic Debugging for Shell Scripts
-
-When shell scripts fail, follow this debugging methodology:
-
-### Variable Scoping Issues
-
-1. Check if variables are defined before use with `set -u` enabled
-2. Verify sourcing order - variables must be defined before modules that use them
-3. Use `declare -p VARIABLE_NAME` to check if variables exist and their values
-4. For modular scripts, ensure initialization functions are called after dependencies are loaded
-
-### Module Dependencies
-
-1. Map out which modules depend on which variables/functions
-2. Source modules in dependency order (common utilities first, then dependent modules)
-3. Initialize variables after all modules are loaded but before functions are called
-4. Use initialization functions rather than inline variable assignment in sourced files
-
-### Common Patterns
-
-- **REPO_ROOT issues**: Always set REPO_ROOT before sourcing modules that use it
-- **Function not found**: Check if the module containing the function was actually sourced
-- **Unbound variable**: Enable `set -u` and check variable initialization order

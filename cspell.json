@@ -1,5 +1,6 @@
 {
 	"dictionaries": ["npm", "node", "typescript", "softwareTerms", "bashWords", "bash"],
+	"words": ["envrc"],
 	"ignorePaths": [
 		"CHANGELOG.md",
 		"CLAUDE.md",
