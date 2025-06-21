@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon --watch src --exec \"node --loader ts-node/esm\" src/index.ts",
+    "dev": "nodemon --watch src --watch package.json --watch package-lock.json --exec \"node --loader ts-node/esm\" src/index.ts",
     "prebuild": "npm run generate",
     "build": "tsc --project tsconfig.build.json && mkdir -p dist/generated && cp -r src/generated/* dist/generated/",
     "check:types": "tsc --noEmit",

@@ -11,7 +11,7 @@
 		"check:spelling": "cspell \"**\" ",
 		"check:types": "tsc --noEmit",
 		"check:unused": "knip",
-		"dev": "nodemon --watch src --exec \"node --loader ts-node/esm\" src/index.ts",
+		"dev": "nodemon --watch src --watch package.json --watch package-lock.json --exec \"node --loader ts-node/esm\" src/index.ts",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint": "eslint src/**/*.ts",

@@ -79,6 +79,13 @@ parse_args() {
                 exit 1
             fi
             ;;
+        dev)
+            # Dev command doesn't support --keep-state
+            if [[ "$KEEP_STATE_MODE" == true ]]; then
+                log_error "Command '$COMMAND' does not support --keep-state flag"
+                exit 1
+            fi
+            ;;
         publish)
             # Publish command doesn't support --keep-state
             if [[ "$KEEP_STATE_MODE" == true ]]; then
@@ -156,6 +163,9 @@ handle_command() {
             ;;
         preflight)
             handle_preflight_command
+            ;;
+        dev)
+            handle_dev_command
             ;;
         publish)
             # Handle publish command
@@ -456,6 +466,115 @@ cleanup_services() {
     
     log_success "Environment cleanup completed"
     log_info "💡 Development tools remain installed"
+}
+
+# Handle dev command - orchestrate development environment
+handle_dev_command() {
+    log_info "🚀 Starting all development servers..."
+    
+    # Check if we're in the repository root
+    if [[ ! -f "$REPO_ROOT/package.json" ]]; then
+        log_error "Root package.json not found. Please run 'npm install' in the repository root first."
+        exit 1
+    fi
+    
+    # Ensure dependencies are installed
+    if [[ ! -d "$REPO_ROOT/node_modules" ]]; then
+        log_info "Installing root dependencies..."
+        (cd "$REPO_ROOT" && npm install) || {
+            log_error "Failed to install root dependencies"
+            exit 1
+        }
+    fi
+    
+    # Discover packages with dev scripts
+    local packages=()
+    for dir in apis libs services; do
+        if [[ -d "$REPO_ROOT/$dir" ]]; then
+            packages+=($(find "$REPO_ROOT/$dir" -mindepth 1 -maxdepth 1 -type d))
+        fi
+    done
+    
+    # Build concurrently command arguments
+    local commands=()
+    local names=()
+    for pkg in "${packages[@]}"; do
+        if [[ -f "$pkg/package.json" ]] && command -v node >/dev/null 2>&1; then
+            # Use Node.js to check if dev script exists (more robust than jq)
+            local has_dev_script
+            has_dev_script=$(node -p "
+                try {
+                    const pkg = require('$pkg/package.json');
+                    pkg.scripts && pkg.scripts.dev ? 'true' : 'false';
+                } catch (e) {
+                    'false';
+                }
+            " 2>/dev/null || echo "false")
+            
+            if [[ "$has_dev_script" == "true" ]]; then
+                local pkg_name=$(basename "$pkg")
+                commands+=("npm run dev --prefix $pkg")
+                names+=("$pkg_name")
+            fi
+        fi
+    done
+    
+    if [[ ${#commands[@]} -eq 0 ]]; then
+        log_error "No packages with dev scripts found"
+        log_info "💡 Make sure packages in /apis, /libs, and /services have 'dev' scripts in their package.json"
+        exit 1
+    fi
+    
+    log_info "📦 Found ${#commands[@]} packages with dev scripts: $(IFS=', '; echo "${names[*]}")"
+    
+    # Start file watcher for libraries in background
+    local watcher_pid=""
+    if [[ -d "$REPO_ROOT/libs" ]]; then
+        log_info "👀 Starting file watcher for libraries..."
+        
+        # Create log directory if it doesn't exist
+        mkdir -p "$REPO_ROOT/.lab"
+        
+        # Start chokidar watcher with enhanced debouncing and proper ignore patterns
+        # Note: --initial flag omitted to avoid publishing all libraries on startup
+        # Watch only source files (.ts, .js) and config files, but exclude package management files
+        npx chokidar 'libs/**/*.{ts,js}' \
+            --ignore 'libs/**/node_modules/**' \
+            --ignore 'libs/**/dist/**' \
+            --ignore 'libs/**/lib/**' \
+            --ignore 'libs/**/.git/**' \
+            --debounce 1000 \
+            -c "$REPO_ROOT/.lab/scripts/handle-lib-change.sh {path}" \
+            > "$REPO_ROOT/.lab/watcher.log" 2>&1 &
+        
+        watcher_pid=$!
+        log_success "File watcher started (PID: $watcher_pid)"
+    else
+        log_info "📁 No libs directory found, skipping file watcher"
+    fi
+    
+    # Set up signal handling for graceful shutdown
+    local cleanup_done=false
+    cleanup() {
+        if [[ "$cleanup_done" == "true" ]]; then
+            return 0
+        fi
+        cleanup_done=true
+        
+        echo "🛑 Shutting down all processes..."
+        if [[ -n "$watcher_pid" ]]; then
+            kill "$watcher_pid" 2>/dev/null || true
+        fi
+        kill 0 2>/dev/null || true
+    }
+    trap cleanup SIGINT SIGTERM EXIT
+    
+    # Run with concurrently using expert analysis recommendations
+    npx concurrently \
+        --names "$(IFS=','; echo "${names[*]}")" \
+        --prefix-colors "auto" \
+        --kill-others=false \
+        "${commands[@]}"
 }
 
 

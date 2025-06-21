@@ -34,6 +34,9 @@ show_command_help() {
         preflight)
             show_preflight_help
             ;;
+        dev)
+            show_dev_help
+            ;;
         publish)
             show_publish_help
             ;;
@@ -265,6 +268,54 @@ NOTES:
 EOF
 }
 
+show_dev_help() {
+    cat << 'EOF'
+🚀 Lab Dev - Development Server Orchestration
+
+USAGE:
+    lab dev [OPTIONS]
+
+DESCRIPTION:
+    Start all development servers and watch for library changes with
+    automatic republishing and service restarts.
+
+    This command will:
+    • Run 'npm run dev' for all packages in /apis, /libs, and /services
+    • Watch library files for changes and auto-publish updates
+    • Automatically restart dependent services when libraries change
+    • Provide clean, prefixed output from all services
+
+OPTIONS:
+    --verbose       Show detailed output from all processes
+    --help          Show this help message
+
+AUTOMATIC WORKFLOW:
+    1. File change in /libs → 2. Auto-publish library → 3. Services restart
+
+EXAMPLES:
+    lab dev                      # Start all dev servers with file watching
+    lab dev --verbose            # Start with detailed logging
+
+REQUIREMENTS:
+    • Node.js environment set up (run 'lab setup' first)
+    • Packages must have 'dev' scripts in their package.json
+    • Services should use nodemon for automatic restart detection
+
+NOTES:
+    • Use Ctrl+C to stop all processes gracefully
+    • File watcher logs are written to .lab/watcher.log
+    • Each service output is prefixed with its package name
+    • Library changes trigger publishing with debounced file watching
+    • Failed services don't stop other services (fault-tolerant)
+
+TECHNICAL DETAILS:
+    • Uses concurrently for parallel process management
+    • Uses chokidar for efficient file watching with 1000ms debounce
+    • Automatic lock mechanism prevents concurrent library publishes
+    • Comprehensive signal handling ensures clean shutdown
+EOF
+}
+
 show_publish_help() {
     cat << 'EOF'
 📦 Lab Publish - Publish Package to Local Registry
@@ -329,6 +380,7 @@ COMMANDS:
     resume          Resume setup from last successful checkpoint
     reset           Clear all checkpoints and start fresh
     preflight       Run verify scripts in all packages (parallel)
+    dev             Start all development servers with file watching
     publish         Publish package to local registry
     help            Show this help message
 
@@ -350,6 +402,7 @@ EXAMPLES:
     lab version                  # Show tool versions
     lab resume                   # Resume from last checkpoint
     lab reset                    # Clear checkpoints and start fresh
+    lab dev                      # Start all development servers with file watching
     lab publish grpc-client-generator  # Publish package to local registry
 
 COMMAND HELP:
