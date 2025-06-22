@@ -8,7 +8,7 @@ export interface ServiceConfig {
 	protoFile: string;
 }
 
-export const generateClients = (options: GeneratorOptions) => {
+export const generateClients = (options: GeneratorOptions): void => {
 	const { services } = options;
 
 	for (const service of services) {

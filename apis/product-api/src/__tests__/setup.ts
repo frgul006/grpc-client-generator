@@ -35,13 +35,13 @@ vi.mock('@grpc/grpc-js', () => ({
 // Mock console methods for cleaner test output
 const originalConsole = { ...console }
 
-export function mockConsole() {
+export function mockConsole(): void {
   console.log = vi.fn()
   console.error = vi.fn()
   console.warn = vi.fn()
   console.info = vi.fn()
 }
 
-export function restoreConsole() {
+export function restoreConsole(): void {
   Object.assign(console, originalConsole)
 }
