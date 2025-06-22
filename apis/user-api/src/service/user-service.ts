@@ -12,7 +12,7 @@ import {
   DeleteUserResponse,
   User as UserProto,
 } from '../generated/user.js'
-import { UserRepository, type User } from '../data/users.js'
+import { UserRepository, type User, type UserFilter } from '../data/users.js'
 
 function userToProto(user: User): UserProto {
   return {
@@ -59,20 +59,13 @@ export const userServiceImplementation = {
   ) => {
     const pageSize = call.request.pageSize || 10
     const pageToken = call.request.pageToken || ''
-    const filter = call.request.filter || ''
+    const searchTerm = call.request.filter || undefined
 
-    let users: User[]
-    if (filter) {
-      users = UserRepository.getAll(filter)
-      const response: ListUsersResponse = {
-        users: users.map(userToProto),
-        totalCount: users.length,
-        nextPageToken: '',
-      }
-      return callback(null, response)
+    const filter: UserFilter = {
+      searchTerm,
     }
 
-    const result = UserRepository.paginate(pageSize, pageToken)
+    const result = UserRepository.paginate(pageSize, pageToken, filter)
     const response: ListUsersResponse = {
       users: result.users.map(userToProto),
       totalCount: result.totalCount,

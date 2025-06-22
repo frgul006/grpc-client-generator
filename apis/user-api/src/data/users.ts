@@ -7,6 +7,10 @@ export interface User {
   updatedAt: number
 }
 
+export interface UserFilter {
+  searchTerm?: string
+}
+
 // In-memory user storage
 const users = new Map<string, User>()
 
@@ -51,11 +55,11 @@ export class UserRepository {
     return users.get(id)
   }
 
-  static getAll(filter?: string): User[] {
+  static getAll(filter?: UserFilter): User[] {
     const allUsers = Array.from(users.values())
-    if (!filter) return allUsers
+    if (!filter?.searchTerm) return allUsers
 
-    const filterLower = filter.toLowerCase()
+    const filterLower = filter.searchTerm.toLowerCase()
     return allUsers.filter(
       (user) =>
         user.name.toLowerCase().includes(filterLower) ||
@@ -106,8 +110,9 @@ export class UserRepository {
   static paginate(
     pageSize: number,
     pageToken: string,
+    filter?: UserFilter,
   ): { users: User[]; nextPageToken: string; totalCount: number } {
-    const allUsers = Array.from(users.values())
+    const allUsers = this.getAll(filter)
     let startIndex = 0
 
     if (pageToken) {

@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   ProductRepository,
   type Product,
+  type ProductFilter,
   type Inventory,
 } from '../../data/products.js'
 
@@ -143,55 +144,67 @@ describe('ProductRepository', () => {
     })
 
     it('should filter products by category (case insensitive)', () => {
-      const products = ProductRepository.getAll('electronics')
+      const products = ProductRepository.getAll({ category: 'electronics' })
 
       expect(products).toHaveLength(2)
       expect(products.map((p) => p.id)).toEqual(['1', '2'])
     })
 
     it('should filter products by category (exact case)', () => {
-      const products = ProductRepository.getAll('Books')
+      const products = ProductRepository.getAll({ category: 'Books' })
 
       expect(products).toHaveLength(1)
       expect(products[0]?.id).toBe('3')
     })
 
     it('should filter products by minimum price', () => {
-      const products = ProductRepository.getAll(undefined, 500)
+      const products = ProductRepository.getAll({ minPrice: 500 })
 
       expect(products).toHaveLength(2)
       expect(products.map((p) => p.id)).toEqual(['1', '2'])
     })
 
     it('should filter products by maximum price', () => {
-      const products = ProductRepository.getAll(undefined, undefined, 100)
+      const products = ProductRepository.getAll({ maxPrice: 100 })
 
       expect(products).toHaveLength(1)
       expect(products[0]?.id).toBe('3')
     })
 
     it('should filter products by price range', () => {
-      const products = ProductRepository.getAll(undefined, 500, 700)
+      const products = ProductRepository.getAll({
+        minPrice: 500,
+        maxPrice: 700,
+      })
 
       expect(products).toHaveLength(1)
       expect(products[0]?.id).toBe('2')
     })
 
     it('should filter products by category and price range', () => {
-      const products = ProductRepository.getAll('Electronics', 500, 700)
+      const products = ProductRepository.getAll({
+        category: 'Electronics',
+        minPrice: 500,
+        maxPrice: 700,
+      })
 
       expect(products).toHaveLength(1)
       expect(products[0]?.id).toBe('2')
     })
 
     it('should return empty array when filters match nothing', () => {
-      const products = ProductRepository.getAll('NonExistentCategory')
+      const products = ProductRepository.getAll({
+        category: 'NonExistentCategory',
+      })
 
       expect(products).toHaveLength(0)
     })
 
     it('should return empty array when price range excludes all products', () => {
-      const products = ProductRepository.getAll(undefined, 2000, 3000)
+      const products = ProductRepository.getAll({
+        minPrice: 2000,
+        maxPrice: 3000,
+      })
 
       expect(products).toHaveLength(0)
     })
@@ -472,7 +485,9 @@ describe('ProductRepository', () => {
     })
 
     it('should apply filters when paginating', () => {
-      const result = ProductRepository.paginate(2, '', 'Electronics')
+      const result = ProductRepository.paginate(2, '', {
+        category: 'Electronics',
+      })
 
       expect(result.products).toHaveLength(2)
       expect(result.totalCount).toBe(2)
@@ -483,7 +498,7 @@ describe('ProductRepository', () => {
     })
 
     it('should apply price filters when paginating', () => {
-      const result = ProductRepository.paginate(5, '', undefined, 500)
+      const result = ProductRepository.paginate(5, '', { minPrice: 500 })
 
       expect(result.products).toHaveLength(2)
       expect(result.totalCount).toBe(2)
@@ -611,7 +626,10 @@ describe('ProductRepository', () => {
       })
 
       // Test filtered pagination
-      const result = ProductRepository.paginate(2, '', 'Electronics', 600)
+      const result = ProductRepository.paginate(2, '', {
+        category: 'Electronics',
+        minPrice: 600,
+      })
 
       expect(result.products).toHaveLength(2)
       expect(result.totalCount).toBe(3) // 1 original + 2 new Electronics products with price >= 600 (Test Phone is 599.99 < 600)

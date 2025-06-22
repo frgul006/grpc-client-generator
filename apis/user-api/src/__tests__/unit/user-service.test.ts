@@ -495,7 +495,9 @@ describe('UserService', () => {
 
       userServiceImplementation.listUsers(mockCall as any, mockCallback)
 
-      expect(paginateSpy).toHaveBeenCalledWith(5, 'token123')
+      expect(paginateSpy).toHaveBeenCalledWith(5, 'token123', {
+        searchTerm: undefined,
+      })
 
       paginateSpy.mockRestore()
     })

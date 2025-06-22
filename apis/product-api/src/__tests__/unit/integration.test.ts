@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   ProductRepository,
   type Product,
+  type ProductFilter,
   type Inventory,
 } from '../../data/products.js'
 
@@ -217,28 +218,36 @@ describe('ProductService Integration Tests', () => {
 
     it('should handle complex filtering combinations', () => {
       // Test category filter only
-      const electronicsProducts = ProductRepository.getAll('Electronics')
+      const electronicsProducts = ProductRepository.getAll({
+        category: 'Electronics',
+      })
       expect(electronicsProducts).toHaveLength(3)
       expect(
         electronicsProducts.every((p) => p.category === 'Electronics'),
       ).toBe(true)
 
       // Test price range filter only
-      const midRangeProducts = ProductRepository.getAll(undefined, 100, 500)
+      const midRangeProducts = ProductRepository.getAll({
+        minPrice: 100,
+        maxPrice: 500,
+      })
       expect(midRangeProducts).toHaveLength(1)
       expect(midRangeProducts[0]?.name).toBe('Mid-Range Electronics')
 
       // Test combined category and price filters
-      const affordableElectronics = ProductRepository.getAll(
-        'Electronics',
-        50,
-        200,
-      )
+      const affordableElectronics = ProductRepository.getAll({
+        category: 'Electronics',
+        minPrice: 50,
+        maxPrice: 200,
+      })
       expect(affordableElectronics).toHaveLength(1)
       expect(affordableElectronics[0]?.name).toBe('Budget Electronics')
 
       // Test filter that matches nothing
-      const expensiveBooks = ProductRepository.getAll('Books', 1000)
+      const expensiveBooks = ProductRepository.getAll({
+        category: 'Books',
+        minPrice: 1000,
+      })
       expect(expensiveBooks).toHaveLength(0)
     })
 
@@ -260,7 +269,7 @@ describe('ProductService Integration Tests', () => {
       expect(page3.nextPageToken).toBe('')
 
       // Test pagination with category filter
-      const electronicsPage1 = ProductRepository.paginate(2, '', 'Electronics')
+      const electronicsPage1 = ProductRepository.paginate(2, '', { category: 'Electronics' })
       expect(electronicsPage1.products).toHaveLength(2)
       expect(electronicsPage1.totalCount).toBe(3)
       expect(electronicsPage1.nextPageToken).toBe('2')
@@ -269,13 +278,9 @@ describe('ProductService Integration Tests', () => {
       ).toBe(true)
 
       // Test pagination with price filter
-      const cheapProductsPage = ProductRepository.paginate(
-        3,
-        '',
-        undefined,
-        undefined,
-        100,
-      )
+      const cheapProductsPage = ProductRepository.paginate(3, '', {
+        maxPrice: 100,
+      })
       expect(cheapProductsPage.products).toHaveLength(3)
       expect(cheapProductsPage.totalCount).toBe(3)
       expect(cheapProductsPage.nextPageToken).toBe('')

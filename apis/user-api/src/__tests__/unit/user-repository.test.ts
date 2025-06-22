@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { UserRepository, type User } from '../../data/users.js'
+import { UserRepository, type User, type UserFilter } from '../../data/users.js'
 
 describe('UserRepository', () => {
   let originalUsers: Map<string, User>
@@ -87,21 +87,21 @@ describe('UserRepository', () => {
     })
 
     it('should filter users by name (case insensitive)', () => {
-      const users = UserRepository.getAll('test user 1')
+      const users = UserRepository.getAll({ searchTerm: 'test user 1' })
 
       expect(users).toHaveLength(1)
       expect(users[0]?.id).toBe('1')
     })
 
     it('should filter users by email (case insensitive)', () => {
-      const users = UserRepository.getAll('TEST2@EXAMPLE.COM')
+      const users = UserRepository.getAll({ searchTerm: 'TEST2@EXAMPLE.COM' })
 
       expect(users).toHaveLength(1)
       expect(users[0]?.id).toBe('2')
     })
 
     it('should filter users by role (case insensitive)', () => {
-      const users = UserRepository.getAll('ADMIN')
+      const users = UserRepository.getAll({ searchTerm: 'ADMIN' })
 
       expect(users).toHaveLength(1)
       expect(users[0]?.id).toBe('2')
@@ -109,20 +109,20 @@ describe('UserRepository', () => {
     })
 
     it('should return multiple matching users', () => {
-      const users = UserRepository.getAll('user') // matches role 'user' and names containing 'User'
+      const users = UserRepository.getAll({ searchTerm: 'user' }) // matches role 'user' and names containing 'User'
 
       expect(users).toHaveLength(3) // All test users have 'User' in name or role
       expect(users.map((u) => u.id)).toEqual(['1', '2', '3'])
     })
 
     it('should return empty array when filter matches nothing', () => {
-      const users = UserRepository.getAll('nonexistent')
+      const users = UserRepository.getAll({ searchTerm: 'nonexistent' })
 
       expect(users).toHaveLength(0)
     })
 
     it('should handle partial matches in all fields', () => {
-      const users = UserRepository.getAll('test') // matches all names
+      const users = UserRepository.getAll({ searchTerm: 'test' }) // matches all names
 
       expect(users).toHaveLength(3)
     })

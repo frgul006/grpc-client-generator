@@ -16,6 +16,12 @@ export interface Inventory {
   lastRestocked: number
 }
 
+export interface ProductFilter {
+  category?: string
+  minPrice?: number
+  maxPrice?: number
+}
+
 // In-memory storage
 const products = new Map<string, Product>()
 const inventory = new Map<string, Inventory[]>()
@@ -115,25 +121,21 @@ export class ProductRepository {
     return products.get(id)
   }
 
-  static getAll(
-    category?: string,
-    minPrice?: number,
-    maxPrice?: number,
-  ): Product[] {
+  static getAll(filter?: ProductFilter): Product[] {
     let result = Array.from(products.values())
 
-    if (category) {
+    if (filter?.category) {
       result = result.filter(
-        (p) => p.category.toLowerCase() === category.toLowerCase(),
+        (p) => p.category.toLowerCase() === filter.category!.toLowerCase(),
       )
     }
 
-    if (minPrice !== undefined) {
-      result = result.filter((p) => p.price >= minPrice)
+    if (filter?.minPrice !== undefined) {
+      result = result.filter((p) => p.price >= filter.minPrice!)
     }
 
-    if (maxPrice !== undefined) {
-      result = result.filter((p) => p.price <= maxPrice)
+    if (filter?.maxPrice !== undefined) {
+      result = result.filter((p) => p.price <= filter.maxPrice!)
     }
 
     return result
@@ -184,11 +186,9 @@ export class ProductRepository {
   static paginate(
     pageSize: number,
     pageToken: string,
-    category?: string,
-    minPrice?: number,
-    maxPrice?: number,
+    filter?: ProductFilter,
   ): { products: Product[]; nextPageToken: string; totalCount: number } {
-    const allProducts = this.getAll(category, minPrice, maxPrice)
+    const allProducts = this.getAll(filter)
     let startIndex = 0
 
     if (pageToken) {

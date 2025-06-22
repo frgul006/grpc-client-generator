@@ -18,6 +18,7 @@ import {
 import {
   ProductRepository,
   type Product,
+  type ProductFilter,
   type Inventory,
 } from '../data/products.js'
 
@@ -97,13 +98,13 @@ export const productServiceImplementation = {
     const minPrice = call.request.minPrice || undefined
     const maxPrice = call.request.maxPrice || undefined
 
-    const result = ProductRepository.paginate(
-      pageSize,
-      pageToken,
+    const filter: ProductFilter = {
       category,
       minPrice,
       maxPrice,
-    )
+    }
+
+    const result = ProductRepository.paginate(pageSize, pageToken, filter)
     const response: ListProductsResponse = {
       products: result.products.map(productToProto),
       nextPageToken: result.nextPageToken,
