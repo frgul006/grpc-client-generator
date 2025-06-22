@@ -1,123 +1,42 @@
 # CLAUDE.md
 
-## Behavior
+## Core Behavior
 
-Be brutally honest, don't be a yes man.
-If I am wrong, point it out bluntly.
-I need honest feedback on my code.
-Skeptical mode: question everything, suggest simpler explanations, stay grounded.
+Be brutally honest, don't be a yes man. If I am wrong, point it out bluntly. I need honest feedback on my code. Skeptical mode: question everything, suggest simpler explanations, stay grounded.
 
-## Code style
+## Development Workflow: Explore-Plan-Code-Commit
 
-- Use ES modules (import/export) syntax
-- Destructure imports when possible: `import { Logger } from './logger'`
-- TypeScript strict mode enabled - all types must be explicit
-- Use type aliases over interfaces for object shapes
-- Prefer `const` over `let`, never use `var`
-- Test names: use descriptive phrases, avoid "should"
-- **FORBIDDEN**: Using `any` is strictly forbidden
+### 1. Explore
+Understand the codebase first. Use available tools to review relevant files and form a clear picture of the current state before proposing changes.
 
-### Shell Scripting Guidelines
+### 2. Plan
+Present a detailed, step-by-step implementation plan. List files to create or modify. **Wait for user approval before proceeding.**
 
-- Use `set -Eeuo pipefail` for strict error handling in all scripts
-- Use `sleep` instead of `timeout` command (timeout doesn't work as expected on macOS)
-- Source modules in dependency order (utilities first, then dependent modules)
-- Initialize variables after all modules are loaded
-- Use `"$variable"` quoting for all variable expansions
-- Use `mktemp -d` for temporary directories, always clean up with `rm -rf`
-- For modular scripts, use initialization functions rather than inline variable assignment
+### 3. Code
+Execute the approved plan methodically. Apply changes systematically.
 
-## Rules
+### 4. Commit
+After verification, create commit with descriptive message and pull request.
 
-- Always test package.json scripts after adding them
-- Don't use "should" in test names
-- **CRITICAL**: Create TodoWrite items for documentation updates to ensure they're not forgotten
-- **MANDATORY**: ALWAYS run `lab preflight` before running mcp**zen**precommit - this is CRITICAL
-- **MANDATORY**: NEVER create git commits without using mcp**zen**precommit first
-- **MANDATORY**: Always run mcp**zen**precommit before claiming any coding task is "done" or "complete"
-- **MANDATORY**: When precommit identifies test failures or warnings, validate that tests use the exact same commands as real workflows
-- **MANDATORY**: Never accept "degraded" test results without verifying the test actually works - run the test commands manually to confirm
-- **CRITICAL**: Test functions must use identical commands to the real workflows they validate
-- **CRITICAL**: Before committing, manually verify test commands work by running them in the actual environment
-- **CRITICAL**: Test function parameters (flags, options, paths) must exactly match production usage
-- Progress documentation is MANDATORY - the user will verify this was done
-- Use zen and context7 tools for complex technical challenges
+## Git Workflow
 
-## Ticketing System
+- **MANDATORY**: Create new branch before starting any coding task
+- Branch naming: kebab-case with task description (e.g., `feat/user-auth`, `fix/memory-leak`)
+- **MANDATORY**: Run `lab preflight` before `mcp__zen__precommit`
+- **MANDATORY**: Use `mcp__zen__precommit` before all commits
+- **MANDATORY**: Create pull request after completion - never push directly to main
 
-When you identify improvements that would be scope creep for the current task, create a proposal ticket.
+## Essential Rules
 
-### When to Create a Ticket
+- Create TodoWrite items for documentation updates
+- Progress documentation is MANDATORY
+- Use zen tools for complex technical challenges
+- Reference `@docs/` files for detailed guidelines:
+  - `@docs/coding-standards.md` - Code style and quality requirements
+  - `@docs/workflows.md` - Ticketing system and development processes
+  - `@docs/tool-reference.md` - Zen and Context7 tool descriptions
 
-Create a ticket ONLY if the improvement:
+## Context Management
 
-- Is outside current task scope (would be scope creep)
-- Is non-trivial (more than a simple fix, affects multiple lines/files)
-- Adds clear value (maintainability, performance, security, or developer experience)
-
-### How to Create a Proposal Ticket
-
-1. **Check for duplicates**: Quick scan of `/tickets/proposals/` filenames
-2. **File naming**: `YYYY-MM-DD-brief-description.md` (e.g., `2024-10-27-refactor-auth-logic.md`) - use kebab-case for description
-3. **Location**: Create in `/tickets/proposals/` (create directory if missing)
-4. **Content format**:
-
-   ```markdown
-   # Brief descriptive title
-
-   ## Problem
-
-   Briefly describe the issue or opportunity (1-2 sentences).
-
-   ## Solution
-
-   Brief description of the proposed change.
-
-   ## Location
-
-   - `path/to/file.js:L10-L25` (relative to repository root)
-   - `path/to/another.py:L102` (relative to repository root)
-   ```
-
-### Important Notes
-
-- Keep proposals concise - detailed planning happens if/when humans activate the ticket
-- You only create proposals; humans handle grooming, prioritization, and moving to done
-- Never edit existing tickets or move tickets between directories
-
-## Enhanced AI Capabilities: Zen and Context7
-
-## Zen Tools (`mcp__zen__*`)
-
-**Deep thinking and analysis tools:**
-
-- **`mcp__zen__thinkdeep`** - Extended reasoning for architecture decisions, complex bugs
-- **`mcp__zen__codereview`** - Professional code review with security, quality analysis
-- **`mcp__zen__debug`** - Expert debugging for complex issues with 1M token capacity
-- **`mcp__zen__analyze`** - General-purpose code and file analysis
-- **`mcp__zen__chat`** - Collaborative thinking partner for brainstorming
-- **`mcp__zen__precommit`** - Comprehensive pre-commit validation (ALWAYS use before commits)
-- **`mcp__zen__testgen`** - Comprehensive test generation with edge case coverage
-- **`mcp__zen__refactor`** - Intelligent refactoring with precise line-number guidance
-
-**When to use Zen tools:**
-
-- Complex technical decisions requiring deep analysis
-- Debugging challenging issues that need expert insight
-- Architecture planning and validation
-- Code review before important commits
-- When you need a thinking partner for complex problems
-
-### Context7 Tools (`mcp__context7__*`)
-
-**Up-to-date documentation and library research:**
-
-- **`mcp__context7__resolve-library-id`** - Find Context7-compatible library IDs
-- **`mcp__context7__get-library-docs`** - Fetch current documentation for libraries
-
-**When to use Context7:**
-
-- Need current documentation for libraries/frameworks
-- Looking for best practices and examples
-- Researching how to use specific tools
-- When web search isn't sufficient for technical details
+- Use `/clear` for new tasks instead of frequent compacting
+- Keep memory focused on session-critical instructions only
