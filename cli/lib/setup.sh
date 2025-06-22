@@ -1,11 +1,10 @@
 #!/bin/bash
+set -Eeuo pipefail
 # =============================================================================
 # SETUP OPERATIONS MODULE
 # =============================================================================
 # This module contains all setup operations for the Lab CLI including
 # tool installation, environment validation, and service configuration.
-
-set -Eeuo pipefail
 
 # Source required modules
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"

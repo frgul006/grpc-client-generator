@@ -1,11 +1,10 @@
 #!/bin/bash
+set -Eeuo pipefail
 # =============================================================================
 # STATE MANAGEMENT AND ERROR RECOVERY MODULE
 # =============================================================================
 # This module handles setup state persistence, checkpointing, error recovery,
 # and retry mechanisms for the Lab CLI tool.
-
-set -Eeuo pipefail
 
 # Source common utilities
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
