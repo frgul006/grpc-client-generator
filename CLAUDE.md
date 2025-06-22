@@ -26,6 +26,12 @@ After verification, create commit with descriptive message and pull request.
 - **MANDATORY**: Use `mcp__zen__precommit` before all commits
 - **MANDATORY**: Create pull request after completion - never push directly to main
 
+## Bash Commands
+
+- `lab preflight`: Run verification across all packages
+- `lab setup`: Install dependencies and setup environment
+- `lab publish <library>`: Publish library to local registry
+
 ## Essential Rules
 
 - Create TodoWrite items for documentation updates
@@ -36,7 +42,8 @@ After verification, create commit with descriptive message and pull request.
   - `@docs/workflows.md` - Ticketing system and development processes
   - `@docs/tool-reference.md` - Zen and Context7 tool descriptions
 
-## Context Management
-
-- Use `/clear` for new tasks instead of frequent compacting
-- Keep memory focused on session-critical instructions only
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
