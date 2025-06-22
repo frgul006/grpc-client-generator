@@ -54,26 +54,6 @@ log_debug() {
     fi
 }
 
-# Progress indicator for long-running operations
-show_progress() {
-    local message="$1"
-    local duration="${2:-30}"
-    local interval="${3:-2}"
-    
-    local counter=0
-    local dots=""
-    
-    while [ $counter -lt $duration ]; do
-        dots="${dots}."
-        if [ ${#dots} -gt 3 ]; then
-            dots="."
-        fi
-        printf "\r${CYAN}[%s] 🔄 %s%s${NC}" "$(date '+%H:%M:%S')" "$message" "$dots"
-        sleep $interval
-        counter=$((counter + interval))
-    done
-    printf "\n"
-}
 
 # Check if Verdaccio is running
 check_verdaccio_running() {
