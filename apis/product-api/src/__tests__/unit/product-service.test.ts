@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { status } from '@grpc/grpc-js'
 import { productServiceImplementation } from '../../service/product-service.js'
@@ -8,6 +7,15 @@ import {
   type Inventory,
 } from '../../data/products.js'
 import { mockConsole, restoreConsole } from '../setup.js'
+import { createMockServerUnaryCall, createMockCallback } from '../grpc-mocks.js'
+import type {
+  GetProductResponse,
+  ListProductsResponse,
+  CreateProductResponse,
+  UpdateProductResponse,
+  DeleteProductResponse,
+  GetInventoryResponse,
+} from '../../generated/product.js'
 
 describe('ProductService', () => {
   let originalProducts: Map<string, Product>
@@ -91,10 +99,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetProductResponse>()
 
-      productServiceImplementation.getProduct(mockCall as any, mockCallback)
+      productServiceImplementation.getProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -111,10 +119,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '999',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetProductResponse>()
 
-      productServiceImplementation.getProduct(mockCall as any, mockCallback)
+      productServiceImplementation.getProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.NOT_FOUND,
@@ -126,10 +134,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetProductResponse>()
 
-      productServiceImplementation.getProduct(mockCall as any, mockCallback)
+      productServiceImplementation.getProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -147,10 +155,10 @@ describe('ProductService', () => {
         minPrice: 0,
         maxPrice: 0,
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListProductsResponse>()
 
-      productServiceImplementation.listProducts(mockCall as any, mockCallback)
+      productServiceImplementation.listProducts(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -170,10 +178,10 @@ describe('ProductService', () => {
         minPrice: 0,
         maxPrice: 0,
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListProductsResponse>()
 
-      productServiceImplementation.listProducts(mockCall as any, mockCallback)
+      productServiceImplementation.listProducts(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -193,10 +201,10 @@ describe('ProductService', () => {
         minPrice: 0,
         maxPrice: 0,
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListProductsResponse>()
 
-      productServiceImplementation.listProducts(mockCall as any, mockCallback)
+      productServiceImplementation.listProducts(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -216,10 +224,10 @@ describe('ProductService', () => {
         minPrice: 50,
         maxPrice: 150,
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListProductsResponse>()
 
-      productServiceImplementation.listProducts(mockCall as any, mockCallback)
+      productServiceImplementation.listProducts(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -241,10 +249,10 @@ describe('ProductService', () => {
         category: 'Electronics',
         sku: 'NEW-001',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateProductResponse>()
 
-      productServiceImplementation.createProduct(mockCall as any, mockCallback)
+      productServiceImplementation.createProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -265,10 +273,10 @@ describe('ProductService', () => {
         category: 'Electronics',
         sku: 'NEW-001',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateProductResponse>()
 
-      productServiceImplementation.createProduct(mockCall as any, mockCallback)
+      productServiceImplementation.createProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -284,10 +292,10 @@ describe('ProductService', () => {
         category: 'Electronics',
         sku: 'NEW-001',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateProductResponse>()
 
-      productServiceImplementation.createProduct(mockCall as any, mockCallback)
+      productServiceImplementation.createProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -303,10 +311,10 @@ describe('ProductService', () => {
         category: 'Electronics',
         sku: 'NEW-001',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateProductResponse>()
 
-      productServiceImplementation.createProduct(mockCall as any, mockCallback)
+      productServiceImplementation.createProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -322,10 +330,10 @@ describe('ProductService', () => {
         category: '',
         sku: 'NEW-001',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateProductResponse>()
 
-      productServiceImplementation.createProduct(mockCall as any, mockCallback)
+      productServiceImplementation.createProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -341,10 +349,10 @@ describe('ProductService', () => {
         category: 'Electronics',
         sku: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateProductResponse>()
 
-      productServiceImplementation.createProduct(mockCall as any, mockCallback)
+      productServiceImplementation.createProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -362,10 +370,10 @@ describe('ProductService', () => {
         price: 150.0,
         category: 'Updated Category',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateProductResponse>()
 
-      productServiceImplementation.updateProduct(mockCall as any, mockCallback)
+      productServiceImplementation.updateProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
       expect(mockCallback).not.toHaveBeenCalledWith(
@@ -381,10 +389,10 @@ describe('ProductService', () => {
         price: 150.0,
         category: 'Updated Category',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateProductResponse>()
 
-      productServiceImplementation.updateProduct(mockCall as any, mockCallback)
+      productServiceImplementation.updateProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -400,10 +408,10 @@ describe('ProductService', () => {
         price: 150.0,
         category: 'Updated Category',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateProductResponse>()
 
-      productServiceImplementation.updateProduct(mockCall as any, mockCallback)
+      productServiceImplementation.updateProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.NOT_FOUND,
@@ -419,10 +427,10 @@ describe('ProductService', () => {
         price: 0,
         category: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateProductResponse>()
 
-      productServiceImplementation.updateProduct(mockCall as any, mockCallback)
+      productServiceImplementation.updateProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
     })
@@ -433,10 +441,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteProductResponse>()
 
-      productServiceImplementation.deleteProduct(mockCall as any, mockCallback)
+      productServiceImplementation.deleteProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
       expect(mockCallback).not.toHaveBeenCalledWith(
@@ -448,10 +456,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteProductResponse>()
 
-      productServiceImplementation.deleteProduct(mockCall as any, mockCallback)
+      productServiceImplementation.deleteProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -463,10 +471,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '999',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteProductResponse>()
 
-      productServiceImplementation.deleteProduct(mockCall as any, mockCallback)
+      productServiceImplementation.deleteProduct(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.NOT_FOUND,
@@ -480,10 +488,10 @@ describe('ProductService', () => {
       const mockRequest = {
         productId: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetInventoryResponse>()
 
-      productServiceImplementation.getInventory(mockCall as any, mockCallback)
+      productServiceImplementation.getInventory(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
       expect(mockCallback).not.toHaveBeenCalledWith(
@@ -495,10 +503,10 @@ describe('ProductService', () => {
       const mockRequest = {
         productId: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetInventoryResponse>()
 
-      productServiceImplementation.getInventory(mockCall as any, mockCallback)
+      productServiceImplementation.getInventory(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -510,10 +518,10 @@ describe('ProductService', () => {
       const mockRequest = {
         productId: '999',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetInventoryResponse>()
 
-      productServiceImplementation.getInventory(mockCall as any, mockCallback)
+      productServiceImplementation.getInventory(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
     })
@@ -530,11 +538,11 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetProductResponse>()
 
       expect(() => {
-        productServiceImplementation.getProduct(mockCall as any, mockCallback)
+        productServiceImplementation.getProduct(mockCall, mockCallback)
       }).toThrow('Database error')
 
       // Restore original method
@@ -547,10 +555,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetProductResponse>()
 
-      productServiceImplementation.getProduct(mockCall as any, mockCallback)
+      productServiceImplementation.getProduct(mockCall, mockCallback)
 
       // Verify the response was called with proper data structure
       expect(mockCallback).toHaveBeenCalledWith(
@@ -568,10 +576,10 @@ describe('ProductService', () => {
       const mockRequest = {
         productId: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetInventoryResponse>()
 
-      productServiceImplementation.getInventory(mockCall as any, mockCallback)
+      productServiceImplementation.getInventory(mockCall, mockCallback)
 
       // Verify the response was called with proper data structure
       expect(mockCallback).toHaveBeenCalledWith(
@@ -591,10 +599,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetProductResponse>()
 
-      productServiceImplementation.getProduct(mockCall as any, mockCallback)
+      productServiceImplementation.getProduct(mockCall, mockCallback)
 
       expect(getByIdSpy).toHaveBeenCalledWith('1')
 
@@ -611,10 +619,10 @@ describe('ProductService', () => {
         category: 'Electronics',
         sku: 'NEW-001',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateProductResponse>()
 
-      productServiceImplementation.createProduct(mockCall as any, mockCallback)
+      productServiceImplementation.createProduct(mockCall, mockCallback)
 
       expect(createSpy).toHaveBeenCalledWith({
         name: 'New Product',
@@ -637,10 +645,10 @@ describe('ProductService', () => {
         price: 0,
         category: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateProductResponse>()
 
-      productServiceImplementation.updateProduct(mockCall as any, mockCallback)
+      productServiceImplementation.updateProduct(mockCall, mockCallback)
 
       expect(updateSpy).toHaveBeenCalledWith('1', {
         name: 'Updated Product',
@@ -655,10 +663,10 @@ describe('ProductService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteProductResponse>()
 
-      productServiceImplementation.deleteProduct(mockCall as any, mockCallback)
+      productServiceImplementation.deleteProduct(mockCall, mockCallback)
 
       expect(deleteSpy).toHaveBeenCalledWith('1')
 
@@ -675,10 +683,10 @@ describe('ProductService', () => {
       const mockRequest = {
         productId: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetInventoryResponse>()
 
-      productServiceImplementation.getInventory(mockCall as any, mockCallback)
+      productServiceImplementation.getInventory(mockCall, mockCallback)
 
       expect(getInventorySpy).toHaveBeenCalledWith('1')
       expect(getTotalQuantitySpy).toHaveBeenCalledWith('1')

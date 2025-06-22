@@ -1,9 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { status } from '@grpc/grpc-js'
 import { userServiceImplementation } from '../../service/user-service.js'
 import { UserRepository, type User } from '../../data/users.js'
 import { mockConsole, restoreConsole } from '../setup.js'
+import { createMockServerUnaryCall, createMockCallback } from '../grpc-mocks.js'
+import type {
+  GetUserResponse,
+  ListUsersResponse,
+  CreateUserResponse,
+  UpdateUserResponse,
+  DeleteUserResponse,
+} from '../../generated/user.js'
 
 describe('UserService', () => {
   let originalUsers: Map<string, User>
@@ -52,10 +59,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetUserResponse>()
 
-      userServiceImplementation.getUser(mockCall as any, mockCallback)
+      userServiceImplementation.getUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -73,10 +80,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '999',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetUserResponse>()
 
-      userServiceImplementation.getUser(mockCall as any, mockCallback)
+      userServiceImplementation.getUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.NOT_FOUND,
@@ -88,10 +95,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetUserResponse>()
 
-      userServiceImplementation.getUser(mockCall as any, mockCallback)
+      userServiceImplementation.getUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -107,10 +114,10 @@ describe('UserService', () => {
         pageToken: '',
         filter: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListUsersResponse>()
 
-      userServiceImplementation.listUsers(mockCall as any, mockCallback)
+      userServiceImplementation.listUsers(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -128,10 +135,10 @@ describe('UserService', () => {
         pageToken: '',
         filter: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListUsersResponse>()
 
-      userServiceImplementation.listUsers(mockCall as any, mockCallback)
+      userServiceImplementation.listUsers(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -149,10 +156,10 @@ describe('UserService', () => {
         pageToken: '',
         filter: 'admin',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListUsersResponse>()
 
-      userServiceImplementation.listUsers(mockCall as any, mockCallback)
+      userServiceImplementation.listUsers(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -172,10 +179,10 @@ describe('UserService', () => {
         name: 'New User',
         role: 'user',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateUserResponse>()
 
-      userServiceImplementation.createUser(mockCall as any, mockCallback)
+      userServiceImplementation.createUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(
         null,
@@ -195,10 +202,10 @@ describe('UserService', () => {
         name: 'New User',
         role: 'user',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateUserResponse>()
 
-      userServiceImplementation.createUser(mockCall as any, mockCallback)
+      userServiceImplementation.createUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -212,10 +219,10 @@ describe('UserService', () => {
         name: '',
         role: 'user',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateUserResponse>()
 
-      userServiceImplementation.createUser(mockCall as any, mockCallback)
+      userServiceImplementation.createUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -229,10 +236,10 @@ describe('UserService', () => {
         name: 'New User',
         role: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateUserResponse>()
 
-      userServiceImplementation.createUser(mockCall as any, mockCallback)
+      userServiceImplementation.createUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -249,10 +256,10 @@ describe('UserService', () => {
         name: 'Updated User',
         role: 'admin',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateUserResponse>()
 
-      userServiceImplementation.updateUser(mockCall as any, mockCallback)
+      userServiceImplementation.updateUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
       expect(mockCallback).not.toHaveBeenCalledWith(
@@ -267,10 +274,10 @@ describe('UserService', () => {
         name: 'Updated User',
         role: 'admin',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateUserResponse>()
 
-      userServiceImplementation.updateUser(mockCall as any, mockCallback)
+      userServiceImplementation.updateUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -285,10 +292,10 @@ describe('UserService', () => {
         name: 'Updated User',
         role: 'admin',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateUserResponse>()
 
-      userServiceImplementation.updateUser(mockCall as any, mockCallback)
+      userServiceImplementation.updateUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.NOT_FOUND,
@@ -303,10 +310,10 @@ describe('UserService', () => {
         name: '',
         role: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateUserResponse>()
 
-      userServiceImplementation.updateUser(mockCall as any, mockCallback)
+      userServiceImplementation.updateUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
     })
@@ -317,10 +324,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteUserResponse>()
 
-      userServiceImplementation.deleteUser(mockCall as any, mockCallback)
+      userServiceImplementation.deleteUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith(null, expect.any(Object))
       expect(mockCallback).not.toHaveBeenCalledWith(
@@ -332,10 +339,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteUserResponse>()
 
-      userServiceImplementation.deleteUser(mockCall as any, mockCallback)
+      userServiceImplementation.deleteUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.INVALID_ARGUMENT,
@@ -347,10 +354,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '999',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteUserResponse>()
 
-      userServiceImplementation.deleteUser(mockCall as any, mockCallback)
+      userServiceImplementation.deleteUser(mockCall, mockCallback)
 
       expect(mockCallback).toHaveBeenCalledWith({
         code: status.NOT_FOUND,
@@ -370,11 +377,11 @@ describe('UserService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetUserResponse>()
 
       expect(() => {
-        userServiceImplementation.getUser(mockCall as any, mockCallback)
+        userServiceImplementation.getUser(mockCall, mockCallback)
       }).toThrow('Database error')
 
       // Restore original method
@@ -387,10 +394,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetUserResponse>()
 
-      userServiceImplementation.getUser(mockCall as any, mockCallback)
+      userServiceImplementation.getUser(mockCall, mockCallback)
 
       // Verify the response was called with proper data structure
       expect(mockCallback).toHaveBeenCalledWith(
@@ -413,10 +420,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<GetUserResponse>()
 
-      userServiceImplementation.getUser(mockCall as any, mockCallback)
+      userServiceImplementation.getUser(mockCall, mockCallback)
 
       expect(getByIdSpy).toHaveBeenCalledWith('1')
 
@@ -431,10 +438,10 @@ describe('UserService', () => {
         name: 'New User',
         role: 'user',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<CreateUserResponse>()
 
-      userServiceImplementation.createUser(mockCall as any, mockCallback)
+      userServiceImplementation.createUser(mockCall, mockCallback)
 
       expect(createSpy).toHaveBeenCalledWith({
         email: 'new@example.com',
@@ -454,10 +461,10 @@ describe('UserService', () => {
         name: '',
         role: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<UpdateUserResponse>()
 
-      userServiceImplementation.updateUser(mockCall as any, mockCallback)
+      userServiceImplementation.updateUser(mockCall, mockCallback)
 
       expect(updateSpy).toHaveBeenCalledWith('1', {
         email: 'updated@example.com',
@@ -472,10 +479,10 @@ describe('UserService', () => {
       const mockRequest = {
         id: '1',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<DeleteUserResponse>()
 
-      userServiceImplementation.deleteUser(mockCall as any, mockCallback)
+      userServiceImplementation.deleteUser(mockCall, mockCallback)
 
       expect(deleteSpy).toHaveBeenCalledWith('1')
 
@@ -490,10 +497,10 @@ describe('UserService', () => {
         pageToken: 'token123',
         filter: '',
       }
-      const mockCall = { request: mockRequest }
-      const mockCallback = vi.fn()
+      const mockCall = createMockServerUnaryCall(mockRequest)
+      const mockCallback = createMockCallback<ListUsersResponse>()
 
-      userServiceImplementation.listUsers(mockCall as any, mockCallback)
+      userServiceImplementation.listUsers(mockCall, mockCallback)
 
       expect(paginateSpy).toHaveBeenCalledWith(5, 'token123', {
         searchTerm: undefined,
