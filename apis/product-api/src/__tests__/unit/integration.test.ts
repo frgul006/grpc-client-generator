@@ -269,7 +269,9 @@ describe('ProductService Integration Tests', () => {
       expect(page3.nextPageToken).toBe('')
 
       // Test pagination with category filter
-      const electronicsPage1 = ProductRepository.paginate(2, '', { category: 'Electronics' })
+      const electronicsPage1 = ProductRepository.paginate(2, '', {
+        category: 'Electronics',
+      })
       expect(electronicsPage1.products).toHaveLength(2)
       expect(electronicsPage1.totalCount).toBe(3)
       expect(electronicsPage1.nextPageToken).toBe('2')
