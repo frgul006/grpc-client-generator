@@ -226,6 +226,7 @@ _update_package_status() {
         
         # Debug: Write to a debug log to see if this is being called
         echo "$(date): $package_name -> $new_phase" >> "${temp_dir}/debug.log"
+        
     fi
 }
 
@@ -583,9 +584,9 @@ _format_package_display() {
             ;;
     esac
     
-    # Format package name with fixed width (20 chars)
+    # Format package name with appropriate width (25 chars to handle longer names)
     local formatted_name
-    printf -v formatted_name "%-20s" "$package_name"
+    printf -v formatted_name "%-25s" "$package_name"
     
     # Build phase display
     local phase_display=""
