@@ -295,6 +295,11 @@ _cleanup_preflight() {
         # Kill the dashboard process and wait for it to exit cleanly
         { kill "$dashboard_pid" && wait "$dashboard_pid"; } 2>/dev/null || true
         sleep 0.1  # Small delay for visual stability
+        
+        # Clear dashboard area and show cursor
+        if [[ "${DASHBOARD_MODE:-false}" == "true" && -t 1 ]]; then
+            printf "\033[2J\033[H"  # Clear screen and move to top
+        fi
     fi
     
     if [[ -n "${tail_pid:-}" ]]; then
@@ -405,20 +410,18 @@ _run_single_verify() {
     local exit_code=${PIPESTATUS[0]}  # Capture exit code of 'npm run verify', not tee or awk
     
     if [[ $exit_code -eq 0 ]]; then
-        # Success: create success marker and clean log
-        touch "${results_dir}/${package_name}.success"
-        rm -f "$log_file"
-        # Mark as completed if in dashboard mode
+        # Success: mark as completed first, then create marker
         if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
             _update_package_status "$package_name" "$temp_dir" "completed"
         fi
+        touch "${results_dir}/${package_name}.success"
+        rm -f "$log_file"
     else
-        # Failure: create failure marker with exit code
-        echo "$exit_code" > "${results_dir}/${package_name}.failure"
-        # Mark as failed if in dashboard mode
+        # Failure: mark as failed first, then create marker
         if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
             _update_package_status "$package_name" "$temp_dir" "failed"
         fi
+        echo "$exit_code" > "${results_dir}/${package_name}.failure"
     fi
 }
 
@@ -834,13 +837,37 @@ handle_preflight_command() {
         set -e
     fi
     
+    # Final status sync for dashboard mode - ensure all completions are recorded
+    if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
+        # Wait a moment for any pending status updates
+        sleep 0.5
+        
+        # Force update any packages that completed but may not have updated status
+        for result_file in "$results_dir"/*.success; do
+            [[ -e "$result_file" ]] || continue
+            local package_name=$(basename "$result_file" .success)
+            _update_package_status "$package_name" "$temp_dir" "completed"
+        done
+        
+        for result_file in "$results_dir"/*.failure; do
+            [[ -e "$result_file" ]] || continue
+            local package_name=$(basename "$result_file" .failure)
+            _update_package_status "$package_name" "$temp_dir" "failed"
+        done
+        
+        # Give dashboard one final update before summary
+        sleep 0.2
+    fi
+    
     # Aggregate and report results
     local overall_status=0
     local success_count=0
     local failure_count=0
     
-    echo
-    log_info "📊 PREFLIGHT SUMMARY"
+    if [[ "${DASHBOARD_MODE:-false}" != "true" ]]; then
+        echo
+        log_info "📊 PREFLIGHT SUMMARY"
+    fi
     echo "================================"
     
     # Report successes
