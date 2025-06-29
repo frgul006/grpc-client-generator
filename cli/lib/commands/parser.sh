@@ -14,6 +14,7 @@ parse_args() {
     COMMAND=""
     KEEP_STATE_MODE=false
     VERBOSE_MODE=false
+    VERBOSE_OUTPUT=false
     COMMAND_ARGS=()
     
     # Handle special case: lab help <command>
@@ -30,6 +31,12 @@ parse_args() {
                 ;;
             --verbose)
                 VERBOSE_MODE=true
+                shift
+                ;;
+            -v)
+                # Short form verbose flag - set both for compatibility
+                VERBOSE_MODE=true
+                VERBOSE_OUTPUT=true
                 shift
                 ;;
             --keep-state)
@@ -76,6 +83,7 @@ parse_args() {
                 log_error "Command '$COMMAND' does not support --keep-state flag"
                 exit 1
             fi
+            # Preflight supports --verbose and -v flags for output control
             ;;
         dev)
             # Dev command doesn't support --keep-state
