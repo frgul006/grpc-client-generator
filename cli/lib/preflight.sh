@@ -143,37 +143,25 @@ _cleanup_dashboard() {
 # =============================================================================
 
 # Parse npm output to detect current phase
-# Args: $1 - output line to parse
+# Args: $1 - output line to parse, $2 - package name (for context)
 # Returns: detected phase name or "unknown"
 _parse_npm_phase() {
     local line="$1"
+    local package_name="${2:-}"
     local phase="unknown"
     
-    # Convert to lowercase for case-insensitive matching
-    local line_lower=$(echo "$line" | tr '[:upper:]' '[:lower:]')
-    
-    # Lint phase patterns
-    if [[ "$line_lower" =~ eslint ]] || [[ "$line" =~ ESLint ]]; then
+    # Only detect main verify script phases by looking for the root package invocation
+    # This prevents detection of nested script calls (like e2e -> build)
+    if [[ "$line" =~ ^"> $package_name@".*" lint"$ ]]; then
         phase="lint"
-    # Format phase patterns
-    elif [[ "$line_lower" =~ prettier ]] || [[ "$line_lower" =~ "checking formatting" ]]; then
+    elif [[ "$line" =~ ^"> $package_name@".*" format"$ ]] || [[ "$line" =~ ^"> $package_name@".*" format:check"$ ]]; then
         phase="format"
-    # Build phase patterns
-    elif [[ "$line_lower" =~ tsc ]] || [[ "$line_lower" =~ tsup ]] || [[ "$line_lower" =~ building ]]; then
+    elif [[ "$line" =~ ^"> $package_name@".*" build"$ ]]; then
         phase="build"
-    # Test phase patterns
-    elif [[ "$line_lower" =~ vitest ]] || [[ "$line" =~ PASS ]] || [[ "$line" =~ FAIL ]]; then
-        phase="test"
-    # NPM script invocation patterns
-    elif [[ "$line" =~ "> ".*" lint" ]]; then
-        phase="lint"
-    elif [[ "$line" =~ "> ".*" format" ]] || [[ "$line" =~ "> ".*" format:check" ]]; then
-        phase="format"
-    elif [[ "$line" =~ "> ".*" build" ]] || [[ "$line" =~ "> ".*" prebuild" ]]; then
-        phase="build"
-    elif [[ "$line" =~ "> ".*" test" ]] || [[ "$line" =~ "> ".*" test:e2e" ]]; then
+    elif [[ "$line" =~ ^"> $package_name@".*" test"$ ]] || [[ "$line" =~ ^"> $package_name@".*" test:e2e"$ ]]; then
         phase="test"
     fi
+    
     
     echo "$phase"
 }
@@ -190,7 +178,7 @@ _init_package_status() {
     # Initialize status files
     echo "pending" > "${status_dir}/${package_name}.phase"
     echo "" > "${status_dir}/${package_name}.start"
-    echo "" > "${status_dir}/${package_name}.phases"
+    : > "${status_dir}/${package_name}.phases"  # Create empty file without newline
 }
 
 # Update package state files with current phase
@@ -213,20 +201,50 @@ _update_package_status() {
     
     # If phase changed and it's not unknown, handle transition
     if [[ "$new_phase" != "unknown" && "$new_phase" != "$current_phase" ]]; then
-        # If we had a previous phase, record its completion with timing
+        # Implement simple forward progression to prevent duplicates
+        # Phase order: pending -> lint -> format -> build -> test -> completed
+        local should_update=true
+        
+        # Get phase priority (higher number = later in sequence)
+        get_phase_priority() {
+            case "$1" in
+                pending) echo 0 ;;
+                lint) echo 1 ;;
+                format) echo 2 ;;
+                build) echo 3 ;;
+                test) echo 4 ;;
+                completed) echo 5 ;;
+                failed) echo 6 ;;
+                *) echo 0 ;;
+            esac
+        }
+        
+        # Only allow forward progression (prevent going backwards)
         if [[ -n "$current_phase" && "$current_phase" != "pending" ]]; then
-            local phase_duration
-            phase_duration=$(_calculate_phase_timing "$package_name" "$temp_dir")
-            echo "${current_phase}:${phase_duration}" >> "${status_dir}/${package_name}.phases"
+            local current_priority=$(get_phase_priority "$current_phase")
+            local new_priority=$(get_phase_priority "$new_phase")
+            
+            # Allow transition only if moving forward or to completed/failed
+            if [[ $new_priority -le $current_priority && "$new_phase" != "completed" && "$new_phase" != "failed" ]]; then
+                should_update=false
+            fi
         fi
         
-        # Update to new phase and record start time
-        echo "$new_phase" > "${status_dir}/${package_name}.phase"
-        echo "$current_time" > "${status_dir}/${package_name}.start"
-        
-        # Debug: Write to a debug log to see if this is being called
-        echo "$(date): $package_name -> $new_phase" >> "${temp_dir}/debug.log"
-        
+        if [[ "$should_update" == "true" ]]; then
+            # If we had a previous phase, record its completion with timing
+            if [[ -n "$current_phase" && "$current_phase" != "pending" ]]; then
+                local phase_duration
+                phase_duration=$(_calculate_phase_timing "$package_name" "$temp_dir")
+                echo "${current_phase}:${phase_duration}" >> "${status_dir}/${package_name}.phases"
+            fi
+            
+            # Update to new phase and record start time
+            echo "$new_phase" > "${status_dir}/${package_name}.phase"
+            echo "$current_time" > "${status_dir}/${package_name}.start"
+            
+            # Debug: Write to a debug log to see if this is being called
+            echo "$(date): $package_name -> $new_phase" >> "${temp_dir}/debug.log"
+        fi
     fi
 }
 
@@ -358,7 +376,7 @@ _process_verify_output() {
         # Phase detection for dashboard mode
         if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
             local detected_phase
-            detected_phase=$(_parse_npm_phase "$line")
+            detected_phase=$(_parse_npm_phase "$line" "$package_name")
             if [[ "$detected_phase" != "unknown" ]]; then
                 _update_package_status "$package_name" "$temp_dir" "$detected_phase"
             fi
@@ -535,6 +553,8 @@ _read_package_status() {
     # Read completed phases with timings
     if [[ -f "${status_dir}/${package_name}.phases" ]]; then
         phases=$(cat "${status_dir}/${package_name}.phases" 2>/dev/null || echo "")
+        # Remove any leading/trailing whitespace and newlines
+        phases=$(echo "$phases" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
     fi
     
     # Check for completion status from results directory
@@ -545,18 +565,20 @@ _read_package_status() {
         phase="failed"
     fi
     
-    # Output status in format: phase|start_time|phases
-    echo "${phase}|${start_time}|${phases}"
+    
+    # Output status in format: phase|start_time|phases (convert newlines to spaces)
+    local phases_formatted=$(echo "$phases" | tr '\n' ' ' | sed 's/ $//')
+    echo "${phase}|${start_time}|${phases_formatted}"
 }
 
 # Format package display line with phases and timings
 _format_package_display() {
     local package_name=$1
-    local status=$2
+    local package_status=$2
     local temp_dir=$3
     
     # Parse status (phase|start_time|phases)
-    IFS='|' read -r phase start_time phases <<< "$status"
+    IFS='|' read -r phase start_time phases <<< "$package_status"
     
     # Determine status indicator and color
     local indicator=""
