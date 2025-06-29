@@ -3,6 +3,7 @@
 ## Problem
 
 The current preflight command creates **cognitive overload** rather than confidence:
+
 - **Information overload**: Shows every line from npm scripts (build paths, file counts, timing info)
 - **No progress context**: Can't tell if 30 seconds of output means 10% or 90% complete
 - **Visual fatigue**: All text looks the same, no hierarchy or importance signals
@@ -17,27 +18,30 @@ Analysis shows 90% of current output is "noise" level information that developer
 **Key Insight**: Developers want to see packages as atomic units progressing through states, not streams of tool output.
 
 ### Recommended Experience Flow
+
 ```bash
 🚀 Preflight Verification (4 packages)
 
-Stage 1: Core Libraries  
+Stage 1: Core Libraries
 ✅ grpc-client-generator (✓lint ✓types ✓build ✓test) 2.1s
 
 Stage 2: Services (parallel)
-🟡 user-api (✓lint ✓format →build)  
+🟡 user-api (✓lint ✓format →build)
 🟡 product-api (✓lint →format)
 ⏳ example-service (pending)
 ```
 
 ### Implementation Strategy
+
 1. **Progressive Status Display** - Show packages transitioning through states with visual indicators
-2. **Smart Filtering** - Hide verbose tool output, show only phase transitions and failures  
+2. **Smart Filtering** - Hide verbose tool output, show only phase transitions and failures
 3. **In-place Updates** - Replace streaming logs with live status updates using ANSI escape codes
 4. **Progressive Disclosure** - Summary view with detailed logs available on failure
 
 ### Technical Changes
+
 - Modify `_run_single_verify` to emit structured status updates instead of raw output
-- Parse npm script phases to show meaningful progress states  
+- Parse npm script phases to show meaningful progress states
 - Create status renderer that updates in-place
 - Maintain full error logging while filtering successful operations
 

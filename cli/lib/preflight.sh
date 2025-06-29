@@ -296,9 +296,9 @@ _cleanup_preflight() {
         { kill "$dashboard_pid" && wait "$dashboard_pid"; } 2>/dev/null || true
         sleep 0.1  # Small delay for visual stability
         
-        # Clear dashboard area and show cursor
+        # Just show cursor, don't clear the final summary
         if [[ "${DASHBOARD_MODE:-false}" == "true" && -t 1 ]]; then
-            printf "\033[2J\033[H"  # Clear screen and move to top
+            tput cnorm 2>/dev/null || printf "\033[?25h"  # Show cursor
         fi
     fi
     
@@ -637,8 +637,8 @@ _render_dashboard() {
             for phase_file in "$status_dir"/*.phase; do
                 [[ -f "$phase_file" ]] || continue
                 local package_name=$(basename "$phase_file" .phase)
-                # Assume all are consumers for now if we can't categorize
-                consumers+=("services/$package_name")
+                # Assume all are consumers for now if we can't categorize, use raw package name
+                consumers+=("$package_name")
             done
         fi
     fi
@@ -855,8 +855,20 @@ handle_preflight_command() {
             _update_package_status "$package_name" "$temp_dir" "failed"
         done
         
-        # Give dashboard one final update before summary
+        # Give dashboard one final update, then stop it before summary
         sleep 0.2
+        
+        # Stop dashboard monitor before showing summary
+        if [[ -n "${dashboard_pid:-}" ]]; then
+            { kill "$dashboard_pid" && wait "$dashboard_pid"; } 2>/dev/null || true
+            dashboard_pid=""  # Clear the PID so cleanup doesn't try again
+            
+            # Move cursor below dashboard area and show cursor
+            if [[ -t 1 ]]; then
+                printf "\n\n"  # Add some space after dashboard
+                tput cnorm 2>/dev/null || printf "\033[?25h"  # Show cursor
+            fi
+        fi
     fi
     
     # Aggregate and report results
