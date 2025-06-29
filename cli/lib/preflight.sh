@@ -45,6 +45,11 @@ _detect_dashboard_mode() {
         return 1  # Force verbose mode
     fi
     
+    # Environment variable override for testing/debugging
+    if [[ "${FORCE_DASHBOARD_MODE:-false}" == "true" ]]; then
+        return 0  # Force dashboard mode
+    fi
+    
     # Check TTY capability
     if ! _is_tty_capable; then
         return 1  # Fall back to verbose mode
@@ -158,6 +163,15 @@ _parse_npm_phase() {
         phase="build"
     # Test phase patterns
     elif [[ "$line_lower" =~ vitest ]] || [[ "$line" =~ PASS ]] || [[ "$line" =~ FAIL ]]; then
+        phase="test"
+    # NPM script invocation patterns
+    elif [[ "$line" =~ "> ".*" lint" ]]; then
+        phase="lint"
+    elif [[ "$line" =~ "> ".*" format" ]] || [[ "$line" =~ "> ".*" format:check" ]]; then
+        phase="format"
+    elif [[ "$line" =~ "> ".*" build" ]] || [[ "$line" =~ "> ".*" prebuild" ]]; then
+        phase="build"
+    elif [[ "$line" =~ "> ".*" test" ]] || [[ "$line" =~ "> ".*" test:e2e" ]]; then
         phase="test"
     fi
     
@@ -576,8 +590,8 @@ _format_package_display() {
     # Build phase display
     local phase_display=""
     if [[ -n "$phases" ]]; then
-        # Show completed phases with timings
-        phase_display="$phases"
+        # Format completed phases: "lint:1.2s format:0.8s"
+        phase_display=$(echo "$phases" | tr '\n' ' ' | sed 's/ $//')
     fi
     
     # Add current phase if in progress
