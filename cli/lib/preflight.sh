@@ -7,6 +7,18 @@ set -Eeuo pipefail
 # package verification across the monorepo.
 
 # =============================================================================
+# MODULE IMPORTS
+# =============================================================================
+
+# Get the directory of this script
+PREFLIGHT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source preflight modules
+source "${PREFLIGHT_DIR}/preflight/output-mode.sh"
+source "${PREFLIGHT_DIR}/preflight/phase-tracker.sh"
+source "${PREFLIGHT_DIR}/preflight/dashboard.sh"
+
+# =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================
 
@@ -15,6 +27,21 @@ set -Eeuo pipefail
 # of background processes (like the tail viewer) and temporary files
 # when the script exits, regardless of success or failure.
 _cleanup_preflight() {
+    # Clean up dashboard-specific resources first
+    _cleanup_dashboard
+    
+    # Clean up background monitoring processes
+    if [[ -n "${dashboard_pid:-}" ]]; then
+        # Kill the dashboard process and wait for it to exit cleanly
+        { kill "$dashboard_pid" && wait "$dashboard_pid"; } 2>/dev/null || true
+        sleep 0.1  # Small delay for visual stability
+        
+        # Just show cursor, don't clear the final summary
+        if [[ "${DASHBOARD_MODE:-false}" == "true" && -t 1 ]]; then
+            tput cnorm 2>/dev/null || printf "\033[?25h"  # Show cursor
+        fi
+    fi
+    
     if [[ -n "${tail_pid:-}" ]]; then
         # Kill the tail process and wait for it to exit cleanly
         { kill "$tail_pid" && wait "$tail_pid"; } 2>/dev/null || true
@@ -25,7 +52,6 @@ _cleanup_preflight() {
         rm -rf "$temp_dir"
     fi
 }
-
 
 # Cross-platform CPU core detection
 get_cpu_cores() {
@@ -53,49 +79,79 @@ _run_single_verify() {
     local log_file="${temp_dir}/logs/${package_name}.log"
     local results_dir="${temp_dir}/results"
     
+    # Initialize package status if in dashboard mode
+    if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
+        _init_package_status "$package_name" "$temp_dir"
+    fi
     
-    # Run verify, teeing raw output to package log, then prefix for live log
-    # The subshell captures both stdout and stderr
-    # Use stdbuf if available to force unbuffered output for real-time display
-    
-    if command -v stdbuf &>/dev/null; then
-        (cd "$package_dir" && npm run verify) 2>&1 | \
-            stdbuf -o0 tee "$log_file" | \
-            stdbuf -o0 awk -v pkg="[$package_name]" '{print pkg, $0; fflush()}' >> "$live_log_path"
-    elif command -v gstdbuf &>/dev/null; then
-        # macOS with Homebrew coreutils
-        (cd "$package_dir" && npm run verify) 2>&1 | \
-            gstdbuf -o0 tee "$log_file" | \
-            gstdbuf -o0 awk -v pkg="[$package_name]" '{print pkg, $0; fflush()}' >> "$live_log_path"
-    else
-        # Fallback: use sed with platform-specific unbuffered flag
-        local sed_unbuf_flag="-u"
-        if ! sed --version 2>&1 | grep -q GNU; then
-            sed_unbuf_flag="-l"  # BSD/macOS sed
+    # Run verify with different output handling based on mode
+    if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
+        # Dashboard mode: no live log, just save to file and track phases
+        if command -v stdbuf &>/dev/null; then
+            (cd "$package_dir" && npm run verify) 2>&1 | \
+                _process_verify_output "$package_name" "$temp_dir" | \
+                stdbuf -o0 tee "$log_file" >/dev/null
+        elif command -v gstdbuf &>/dev/null; then
+            (cd "$package_dir" && npm run verify) 2>&1 | \
+                _process_verify_output "$package_name" "$temp_dir" | \
+                gstdbuf -o0 tee "$log_file" >/dev/null
+        else
+            (cd "$package_dir" && npm run verify) 2>&1 | \
+                _process_verify_output "$package_name" "$temp_dir" | \
+                tee "$log_file" >/dev/null
         fi
-        (cd "$package_dir" && npm run verify) 2>&1 | \
-            tee "$log_file" | \
-            sed $sed_unbuf_flag "s/^/[$package_name] /" >> "$live_log_path"
+    else
+        # Verbose mode: use live log as before
+        if command -v stdbuf &>/dev/null; then
+            (cd "$package_dir" && npm run verify) 2>&1 | \
+                _process_verify_output "$package_name" "$temp_dir" | \
+                stdbuf -o0 tee "$log_file" | \
+                stdbuf -o0 awk -v pkg="[$package_name]" '{print pkg, $0; fflush()}' >> "$live_log_path"
+        elif command -v gstdbuf &>/dev/null; then
+            # macOS with Homebrew coreutils
+            (cd "$package_dir" && npm run verify) 2>&1 | \
+                _process_verify_output "$package_name" "$temp_dir" | \
+                gstdbuf -o0 tee "$log_file" | \
+                gstdbuf -o0 awk -v pkg="[$package_name]" '{print pkg, $0; fflush()}' >> "$live_log_path"
+        else
+            # Fallback: use sed with platform-specific unbuffered flag
+            local sed_unbuf_flag="-u"
+            if ! sed --version 2>&1 | grep -q GNU; then
+                sed_unbuf_flag="-l"  # BSD/macOS sed
+            fi
+            (cd "$package_dir" && npm run verify) 2>&1 | \
+                _process_verify_output "$package_name" "$temp_dir" | \
+                tee "$log_file" | \
+                sed $sed_unbuf_flag "s/^/[$package_name] /" >> "$live_log_path"
+        fi
     fi
     
     local exit_code=${PIPESTATUS[0]}  # Capture exit code of 'npm run verify', not tee or awk
     
     if [[ $exit_code -eq 0 ]]; then
-        # Success: create success marker and clean log
+        # Success: mark as completed first, then create marker
+        if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
+            _update_package_status "$package_name" "$temp_dir" "completed"
+        fi
         touch "${results_dir}/${package_name}.success"
         rm -f "$log_file"
-        # No echo output - summary handled by main function
     else
-        # Failure: create failure marker with exit code
+        # Failure: mark as failed first, then create marker
+        if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
+            _update_package_status "$package_name" "$temp_dir" "failed"
+        fi
         echo "$exit_code" > "${results_dir}/${package_name}.failure"
-        # No echo output - summary handled by main function
     fi
-    
-
 }
 
-# Export function for xargs subshells
+# Export functions and variables for xargs subshells
 export -f _run_single_verify
+export -f _process_verify_output
+export -f _parse_npm_phase
+export -f _update_package_status
+export -f _init_package_status
+export -f _calculate_phase_timing
+export DASHBOARD_MODE
 
 # =============================================================================
 # MAIN PREFLIGHT COMMAND HANDLER
@@ -128,13 +184,18 @@ handle_preflight_command() {
     temp_dir=$(mktemp -d)
     local results_dir="${temp_dir}/results"
     local log_dir="${temp_dir}/logs"
+    local status_dir="${temp_dir}/status"
     local live_log="${temp_dir}/live.log"  # Define central log
-    mkdir -p "$results_dir" "$log_dir"
+    mkdir -p "$results_dir" "$log_dir" "$status_dir"
     touch "$live_log"  # Create the file for tailing
     echo "Starting preflight verification..." > "$live_log"  # Initial content
     sync  # Ensure file is flushed to disk
     
+    # Set up output mode (dashboard vs verbose) based on TTY detection and flags
+    _setup_output_mode "$temp_dir"
+    
     tail_pid=""  # Global variable for trap access
+    dashboard_pid=""  # Global variable for trap access
     
     # Ensure cleanup on exit
     trap '_cleanup_preflight' EXIT
@@ -149,10 +210,8 @@ handle_preflight_command() {
         log_warning "For optimal live log performance, consider installing coreutils: brew install coreutils"
     fi
     
-    # Start streaming the last 20 lines of the live log
-    tail -n 20 -f "$live_log" &
-    tail_pid=$!
-    sleep 0.5  # Give tail time to start monitoring the file
+    # Don't start monitoring until we have packages to show
+    # This will be started after package discovery
     
     # Discover packages with verify scripts
     log_info "🔍 Discovering packages with verify scripts..."
@@ -185,12 +244,31 @@ handle_preflight_command() {
         fi
     done
     
-    # Stage 1: Run producer packages sequentially
-    log_info "📦 Stage 1: Verifying ${#producers[@]} core producer packages..."
+    # Now start monitoring with packages discovered
+    if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
+        # Save package lists to files for dashboard monitor to use
+        printf '%s\n' "${producers[@]}" > "${temp_dir}/producers.list"
+        printf '%s\n' "${consumers[@]}" > "${temp_dir}/consumers.list"
+        
+        # Dashboard mode: start background dashboard renderer
+        _start_dashboard_monitor "$temp_dir" &
+        dashboard_pid=$!
+    else
+        # Traditional mode: start streaming the last 20 lines of the live log
+        tail -n 20 -f "$live_log" &
+        tail_pid=$!
+        sleep 0.5  # Give tail time to start monitoring the file
+    fi
     
+    # Stage 1: Run producer packages sequentially
+    if [[ "${DASHBOARD_MODE:-false}" != "true" ]]; then
+        log_info "📦 Stage 1: Verifying ${#producers[@]} core producer packages..."
+    fi
     
     for pkg in "${producers[@]}"; do
-        log_info "🔧 Verifying producer: $(basename "$pkg")"
+        if [[ "${DASHBOARD_MODE:-false}" != "true" ]]; then
+            log_info "🔧 Verifying producer: $(basename "$pkg")"
+        fi
         # Disable strict error handling for verification (may fail)
         set +e
         _run_single_verify "$pkg" "$temp_dir" "$live_log"
@@ -204,20 +282,59 @@ handle_preflight_command() {
     
     # Stage 2: Run consumer packages in parallel (if producers succeeded)
     if [[ "$producer_failed" == true ]]; then
-        log_error "⚠️  Core producer package failed verification. Halting parallel execution."
+        if [[ "${DASHBOARD_MODE:-false}" != "true" ]]; then
+            log_error "⚠️  Core producer package failed verification. Halting parallel execution."
+        fi
     elif [[ ${#consumers[@]} -gt 0 ]]; then
         local cpu_cores
         cpu_cores=$(get_cpu_cores)
-        log_info "⚡ Stage 2: Verifying ${#consumers[@]} consumer packages in parallel (${cpu_cores} cores)"
+        if [[ "${DASHBOARD_MODE:-false}" != "true" ]]; then
+            log_info "⚡ Stage 2: Verifying ${#consumers[@]} consumer packages in parallel (${cpu_cores} cores)"
+        fi
         
+        # Export variables for parallel execution
+        export DASHBOARD_MODE
         
         # Disable strict error handling for parallel execution (packages may fail)
         set +e
-        printf '%s
-' "${consumers[@]}" | \
+        printf '%s\n' "${consumers[@]}" | \
             xargs -P "$cpu_cores" -I {} bash -c '_run_single_verify "$@"' _ {} "$temp_dir" "$live_log"
         # Re-enable strict error handling
         set -e
+    fi
+    
+    # Final status sync for dashboard mode - ensure all completions are recorded
+    if [[ "${DASHBOARD_MODE:-false}" == "true" ]]; then
+        # Wait a moment for any pending status updates
+        sleep 0.5
+        
+        # Force update any packages that completed but may not have updated status
+        for result_file in "$results_dir"/*.success; do
+            [[ -e "$result_file" ]] || continue
+            local package_name=$(basename "$result_file" .success)
+            _update_package_status "$package_name" "$temp_dir" "completed"
+        done
+        
+        for result_file in "$results_dir"/*.failure; do
+            [[ -e "$result_file" ]] || continue
+            local package_name=$(basename "$result_file" .failure)
+            _update_package_status "$package_name" "$temp_dir" "failed"
+        done
+        
+        # Give dashboard one final update, then stop it before summary
+        sleep 0.2
+        
+        # Stop dashboard monitor before showing summary
+        if [[ -n "${dashboard_pid:-}" ]]; then
+            { kill "$dashboard_pid" && wait "$dashboard_pid"; } 2>/dev/null || true
+            dashboard_pid=""  # Clear the PID so cleanup doesn't try again
+            
+            # Move cursor below dashboard area and show cursor
+            if [[ -t 1 ]]; then
+                printf "\n\n"  # Add some space after dashboard
+                tput cnorm 2>/dev/null || printf "\033[?25h"  # Show cursor
+            fi
+        fi
     fi
     
     # Aggregate and report results
@@ -225,8 +342,10 @@ handle_preflight_command() {
     local success_count=0
     local failure_count=0
     
-    echo
-    log_info "📊 PREFLIGHT SUMMARY"
+    if [[ "${DASHBOARD_MODE:-false}" != "true" ]]; then
+        echo
+        log_info "📊 PREFLIGHT SUMMARY"
+    fi
     echo "================================"
     
     # Report successes

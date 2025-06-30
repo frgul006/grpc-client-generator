@@ -55,3 +55,6 @@ verdaccio-htpasswd
 # Lab development environment
 .lab/locks/
 .lab/watcher.log
+
+# requirements
+requirements/**
