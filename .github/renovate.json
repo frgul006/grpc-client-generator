@@ -1,0 +1,120 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency Dashboard",
+  "rebaseWhen": "conflicted",
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageAction": "update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "semanticCommits": "enabled",
+  "timezone": "UTC",
+  "schedule": ["before 4am on monday"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "updateNotScheduled": false,
+  "minimumReleaseAge": "7 days",
+  "stabilityDays": 7,
+  "postUpdateOptions": ["npmDedupe"],
+  "packageRules": [
+    {
+      "description": "Disable patch updates to focus on meaningful changes",
+      "matchUpdateTypes": ["patch"],
+      "enabled": false
+    },
+    {
+      "description": "Group TypeScript ecosystem updates",
+      "groupName": "TypeScript ecosystem",
+      "matchPackageNames": [
+        "typescript",
+        "@types/node",
+        "ts-node",
+        "ts-proto",
+        "@typescript-eslint/eslint-plugin",
+        "@typescript-eslint/parser",
+        "typescript-eslint"
+      ]
+    },
+    {
+      "description": "Group testing framework updates", 
+      "groupName": "Testing frameworks",
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/coverage-v8",
+        "@vitest/ui",
+        "@vitest/eslint-plugin"
+      ]
+    },
+    {
+      "description": "Group gRPC related updates",
+      "groupName": "gRPC packages",
+      "matchPackageNames": [
+        "@grpc/grpc-js",
+        "@grpc/proto-loader",
+        "grpc-server-reflection"
+      ]
+    },
+    {
+      "description": "Group ESLint ecosystem updates",
+      "groupName": "ESLint ecosystem",
+      "matchPackageNames": [
+        "eslint",
+        "@eslint/js",
+        "eslint-plugin-*"
+      ],
+      "matchPackagePatterns": [
+        "^eslint-plugin-"
+      ]
+    },
+    {
+      "description": "Group build tools updates",
+      "groupName": "Build tools",
+      "matchPackageNames": [
+        "tsup",
+        "rollup",
+        "vite",
+        "vite-node"
+      ]
+    },
+    {
+      "description": "Automerge minor and patch updates with safety delay",
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true,
+      "requiredStatusChecks": ["build", "test", "lint"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Major updates require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["dependencies", "major-update", "review-required"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "addLabels": ["security", "vulnerability"]
+  },
+  "osvVulnerabilityAlerts": true,
+  "labels": ["dependencies", "renovate"],
+  "addLabels": ["automated-pr"],
+  "assigneesFromCodeOwners": true,
+  "reviewersFromCodeOwners": true,
+  "enabledManagers": ["npm"],
+  "includeForks": false,
+  "forkProcessing": "disabled",
+  "packageFiles": [
+    "package.json",
+    "apis/*/package.json",
+    "libs/*/package.json",
+    "services/*/package.json"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 4am on monday"]
+  }
+}
