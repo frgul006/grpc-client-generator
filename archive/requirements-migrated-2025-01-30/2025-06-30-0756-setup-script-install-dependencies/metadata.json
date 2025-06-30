@@ -1,0 +1,19 @@
+{
+  "id": "setup-script-install-dependencies",
+  "started": "2025-06-30T07:56:00Z",
+  "lastUpdated": "2025-06-30T08:08:00Z",
+  "status": "active",
+  "phase": "complete",
+  "progress": {
+    "discovery": { "answered": 5, "total": 5 },
+    "detail": { "answered": 5, "total": 5 }
+  },
+  "contextFiles": [
+    "cli/lib/setup/infrastructure.sh",
+    "cli/lib/state/execution.sh",
+    "cli/lib/common.sh",
+    "cli/lib/setup/orchestration.sh",
+    "cli/lib/commands/handlers.sh"
+  ],
+  "relatedFeatures": ["handle_dev_command", "retry_with_backoff", "state_management"]
+}

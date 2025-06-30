@@ -27,3 +27,12 @@
 - Test functions must use identical commands to the real workflows they validate
 - Test function parameters (flags, options, paths) must exactly match production usage
 - Before committing, manually verify test commands work by running them in the actual environment
+
+## Issue Management
+
+- Create GitHub issues for improvements that would be scope creep
+- Use issue templates (ticket.yml or rfc.yml) for consistent formatting
+- Apply appropriate labels: epic, type, priority, and status
+- Reference issue numbers in branch names (e.g., `feat/user-auth-123`)
+- Include issue references in commit messages using `#123` format
+- Link pull requests to issues for automatic closure on merge

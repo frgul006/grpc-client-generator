@@ -1,0 +1,18 @@
+{
+  "id": "revisit-core-generator",
+  "started": "2025-06-29T23:47:00Z",
+  "lastUpdated": "2025-06-29T23:47:00Z",
+  "status": "complete", 
+  "phase": "complete",
+  "progress": {
+    "discovery": { "answered": 5, "total": 5 },
+    "detail": { "answered": 5, "total": 5 }
+  },
+  "contextFiles": [
+    "/Users/fredrik/dev/github/grpc-client-generator/libs/grpc-client-generator/src/index.ts",
+    "/Users/fredrik/dev/github/grpc-client-generator/libs/grpc-client-generator/package.json", 
+    "/Users/fredrik/dev/github/grpc-client-generator/requirements/2025-06-29-2306-core-generator/06-requirements-spec.md"
+  ],
+  "relatedFeatures": ["core-generator-original"],
+  "parentRequirement": "2025-06-29-2306-core-generator"
+}

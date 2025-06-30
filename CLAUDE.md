@@ -4,24 +4,58 @@
 
 Be brutally honest, don't be a yes man. If I am wrong, point it out bluntly. I need honest feedback on my code. Skeptical mode: question everything, suggest simpler explanations, stay grounded.
 
-## Development Workflow: Explore-Plan-Code-Commit
+## Issue Management Workflow
+
+1. **Check Existing Issues**
+   - Search GitHub Issues for related work
+   - Check migration map in `/docs/issue-migration.md` for historical context
+
+2. **Create New Issues**
+   - Use appropriate issue template
+   - Apply relevant labels (epic, type, status, priority)
+   - Link to related issues or PRs
+
+3. **Work on Issues**
+   - Assign yourself to the issue
+   - Update status label to `status/in-progress`
+   - Reference issue in commit messages: `feat: implement X (#123)`
+   - Link PR to issue for automatic closure
+
+## Label Convention
+
+- **Epic Labels**: `epic/cli`, `epic/protoc-plugin`, `epic/*-client`
+- **Type Labels**: `type/feature`, `type/bug`, `type/enhancement`, `type/docs`, `type/rfc`
+- **Status Labels**: `status/todo`, `status/in-progress`, `status/review`, `status/done`, `status/blocked`
+- **Priority Labels**: `priority/critical`, `priority/high`, `priority/medium`, `priority/low`
+
+## Development Workflow: Explore-Plan-Code-Commit-Track
 
 ### 1. Explore
-Understand the codebase first. Use available tools to review relevant files and form a clear picture of the current state before proposing changes.
+- Check GitHub Issues for related work
+- Review `/docs/issue-migration.md` for historical context
+- Understand the codebase first
 
 ### 2. Plan
-Present a detailed, step-by-step implementation plan. List files to create or modify. **Wait for user approval before proceeding.**
+- Create or update GitHub Issue with implementation plan
+- Present detailed steps
+- **Wait for user approval before proceeding**
 
 ### 3. Code
-Execute the approved plan methodically. Apply changes systematically.
+- Reference issue number in branch name: `feat/user-auth-123`
+- Execute the approved plan methodically
 
 ### 4. Commit
-After verification, create commit with descriptive message and pull request.
+- Include issue reference: `fixes #123` or `relates to #123`
+- Create PR linked to issue
+
+### 5. Track
+- Update issue status labels
+- Close issue when PR is merged
 
 ## Git Workflow
 
 - **MANDATORY**: Create new branch before starting any coding task
-- Branch naming: kebab-case with task description (e.g., `feat/user-auth`, `fix/memory-leak`)
+- Branch naming: kebab-case with task description and issue reference (e.g., `feat/user-auth-123`, `fix/memory-leak-456`)
 - **MANDATORY**: Run `lab preflight` before `mcp__zen__precommit`
 - **MANDATORY**: Use `mcp__zen__precommit` before all commits
 - **MANDATORY**: Create pull request after completion - never push directly to main
@@ -34,12 +68,12 @@ After verification, create commit with descriptive message and pull request.
 
 ## Essential Rules
 
-- Create TodoWrite items for documentation updates
+- Use GitHub Issues for all task tracking
 - Progress documentation is MANDATORY
 - Use zen tools for complex technical challenges
 - Reference `@docs/` files for detailed guidelines:
   - `@docs/coding-standards.md` - Code style and quality requirements
-  - `@docs/workflows.md` - Ticketing system and development processes
+  - `@docs/workflows.md` - Development processes
   - `@docs/tool-reference.md` - Zen and Context7 tool descriptions
 
 # important-instruction-reminders

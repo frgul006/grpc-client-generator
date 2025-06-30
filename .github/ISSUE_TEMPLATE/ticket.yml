@@ -1,0 +1,77 @@
+name: Development Ticket
+description: Create a new development ticket
+title: "[TICKET] "
+labels: ["type/ticket"]
+body:
+  - type: dropdown
+    id: epic
+    attributes:
+      label: Epic/Scope
+      description: Which epic does this belong to?
+      options:
+        - setup-script
+        - product-api
+        - registry
+        - docs
+        - ci-cd
+        - tooling
+        - cli
+    validations:
+      required: true
+  
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: Clear description of what needs to be done
+    validations:
+      required: true
+  
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: Business or technical justification
+    validations:
+      required: true
+  
+  - type: textarea
+    id: how
+    attributes:
+      label: How
+      description: Implementation approach and steps
+    validations:
+      required: true
+  
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: Specific criteria for completion (use checkboxes)
+      value: |
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Estimated Effort
+      options:
+        - Small (< 1 hour)
+        - Medium (1-4 hours)
+        - Large (> 4 hours)
+    validations:
+      required: true

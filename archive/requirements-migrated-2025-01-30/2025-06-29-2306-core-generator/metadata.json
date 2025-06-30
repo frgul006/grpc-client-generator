@@ -1,0 +1,24 @@
+{
+  "id": "core-generator",
+  "started": "2025-06-29T23:06:00Z",
+  "lastUpdated": "2025-06-29T23:35:00Z",
+  "status": "complete",
+  "phase": "specification",
+  "progress": {
+    "discovery": { "answered": 5, "total": 5 },
+    "detail": { "answered": 0, "total": 0 },
+    "specification": { "generated": true }
+  },
+  "contextFiles": [
+    "/Users/fredrik/dev/github/grpc-client-generator/libs/grpc-client-generator/src/index.ts",
+    "/Users/fredrik/dev/github/grpc-client-generator/apis/product-api/src/generated/product.ts",
+    "/Users/fredrik/dev/github/grpc-client-generator/cli/lib/preflight.sh"
+  ],
+  "relatedFeatures": [],
+  "technicalAnalysis": {
+    "completed": true,
+    "method": "zen-thinkdeep",
+    "confidence": "very_high",
+    "approach": "TypeScript AST post-processing of ts-proto output"
+  }
+}

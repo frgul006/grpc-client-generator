@@ -1,43 +1,40 @@
 # Development Workflows
 
-## Ticketing System
+## Issue Management System
 
-When you identify improvements that would be scope creep for the current task, create a proposal ticket.
+When you identify improvements that would be scope creep for the current task, create a GitHub issue.
 
-### When to Create a Ticket
+### When to Create an Issue
 
-Create a ticket ONLY if the improvement:
+Create an issue ONLY if the improvement:
 
 - Is outside current task scope (would be scope creep)
 - Is non-trivial (more than a simple fix, affects multiple lines/files)
 - Adds clear value (maintainability, performance, security, or developer experience)
 
-### How to Create a Proposal Ticket
+### How to Create a GitHub Issue
 
-1. **Check for duplicates**: Quick scan of `/tickets/proposals/` filenames
-2. **File naming**: `YYYY-MM-DD-brief-description.md` (e.g., `2024-10-27-refactor-auth-logic.md`) - use kebab-case for description
-3. **Location**: Create in `/tickets/proposals/` (create directory if missing)
-4. **Content format**:
+1. **Check for duplicates**: Search existing issues with `gh issue list --search "keywords"`
+2. **Create via CLI**: Use `gh issue create` and select the appropriate template
+3. **Apply labels**: Use appropriate epic, type, priority, and status labels
+4. **Link to PR**: Reference the issue number in commits and pull requests
 
-   ```markdown
-   # Brief descriptive title
+### Issue Templates
 
-   ## Problem
+The repository includes structured templates for:
+- **Development Tickets**: For features, bugs, and improvements
+- **RFCs**: For architectural decisions and major changes
 
-   Briefly describe the issue or opportunity (1-2 sentences).
+### Working with Issues
 
-   ## Solution
-
-   Brief description of the proposed change.
-
-   ## Location
-
-   - `path/to/file.js:L10-L25` (relative to repository root)
-   - `path/to/another.py:L102` (relative to repository root)
-   ```
+1. **Claim an issue**: Comment on the issue or assign yourself
+2. **Create branch**: Include issue number (e.g., `feat/user-auth-123`)
+3. **Reference in commits**: Use `#123` in commit messages
+4. **Link PR**: GitHub automatically links PRs that reference issues
 
 ### Important Notes
 
-- Keep proposals concise - detailed planning happens if/when humans activate the ticket
-- You only create proposals; humans handle grooming, prioritization, and moving to done
-- Never edit existing tickets or move tickets between directories
+- Use the GitHub web interface or CLI for all issue operations
+- Follow the label conventions defined in CLAUDE.md
+- Issues are automatically closed when linked PRs are merged
+- For historical reference, see `/docs/issue-migration.md`
