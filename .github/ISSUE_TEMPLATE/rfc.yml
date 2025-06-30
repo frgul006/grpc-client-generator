@@ -1,0 +1,46 @@
+name: RFC (Request for Comments)
+description: Create a new RFC for major features or changes
+title: "[RFC] "
+labels: ["type/rfc"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: RFC Title
+      description: Brief, descriptive title
+    validations:
+      required: true
+  
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: Problem statement and proposed solution
+    validations:
+      required: true
+  
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      description: Detailed requirements and acceptance criteria
+    validations:
+      required: true
+  
+  - type: textarea
+    id: technical
+    attributes:
+      label: Technical Approach
+      description: Implementation details and architecture
+  
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - Draft
+        - Ready for Review
+        - Approved
+        - Implemented
+    validations:
+      required: true
