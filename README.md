@@ -17,16 +17,21 @@ A comprehensive toolkit for generating gRPC clients and managing protobuf-based 
    cd grpc-client-generator
    ./cli/lab setup
    ```
+   
+   After setup, direnv enables the `lab` command shortcut:
+   ```bash
+   lab preflight  # instead of ./cli/lab preflight
+   ```
 
 2. **Verify Installation**
    ```bash
-   ./cli/lab preflight
+   lab preflight  # or ./cli/lab preflight
    ```
 
 3. **Start Development**
    ```bash
    # Start all services with hot reload
-   ./cli/lab dev
+   lab dev
 
    # Or run individual services
    cd apis/product-api && npm run dev
@@ -37,11 +42,13 @@ A comprehensive toolkit for generating gRPC clients and managing protobuf-based 
 
 | Command | Purpose |
 |---------|---------|
-| `./cli/lab setup` | Install tools, setup Docker network |
-| `./cli/lab preflight` | Run all tests and checks |
-| `./cli/lab dev` | Start all services with file watching |
-| `./cli/lab status` | Check service status |
-| `./cli/lab cleanup` | Stop all services |
+| `lab setup` | Install tools, setup Docker network |
+| `lab preflight` | Run all tests and checks |
+| `lab dev` | Start all services with file watching |
+| `lab status` | Check service status |
+| `lab cleanup` | Stop all services |
+
+> **Note**: Use `lab` command directly after setup (direnv required) or `./cli/lab` if direnv not configured.
 
 ### Testing gRPC Services
 
