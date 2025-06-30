@@ -37,9 +37,16 @@ jobs:
       
       - name: Install dependencies
         run: |
+          # Install root dependencies
           npm ci
-          # Install dependencies for all workspaces
-          npm ci --workspaces --include-workspace-root
+          
+          # Install dependencies for each package with verify scripts
+          find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | while read dir; do
+            if [ "$dir" != "." ] && jq -e '.scripts.verify' "$dir/package.json" >/dev/null 2>&1; then
+              echo "Installing dependencies for $dir"
+              (cd "$dir" && npm ci)
+            fi
+          done
       
       - name: Run preflight checks
         run: ./cli/lab preflight
