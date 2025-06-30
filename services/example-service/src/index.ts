@@ -11,4 +11,6 @@
 // 	],
 // });
 
-console.log("Example service placeholder - grpc-client-generator integration pending");
+console.log(
+	"Example service placeholder - grpc-client-generator integration pending",
+);
