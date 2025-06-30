@@ -40,11 +40,26 @@ jobs:
           # Install root dependencies
           npm ci
           
-          # Install dependencies for each package with verify scripts
+          # Step 1: Build the producer package (grpc-client-generator) first
+          echo "Building grpc-client-generator library..."
+          cd libs/grpc-client-generator
+          npm ci
+          npm run build
+          
+          # Create npm link for local development
+          npm link
+          cd ../..
+          
+          # Step 2: Install other packages and link the grpc-client-generator
           find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | while read dir; do
-            if [ "$dir" != "." ] && jq -e '.scripts.verify' "$dir/package.json" >/dev/null 2>&1; then
+            if [ "$dir" != "." ] && [ "$dir" != "./libs/grpc-client-generator" ] && jq -e '.scripts.verify' "$dir/package.json" >/dev/null 2>&1; then
               echo "Installing dependencies for $dir"
-              (cd "$dir" && npm ci)
+              cd "$dir"
+              # Install other dependencies first (excluding grpc-client-generator)
+              npm ci --no-optional || true
+              # Link the local grpc-client-generator
+              npm link grpc-client-generator || true
+              cd - > /dev/null
             fi
           done
       
