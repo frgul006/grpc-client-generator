@@ -3,5 +3,6 @@
 	"entry": ["src/**/*.test.*", "src/index.ts"],
 	"ignoreExportsUsedInFile": { "interface": true, "type": true },
 	"project": ["src/**/*.ts"],
-	"ignoreDependencies": ["@grpc/grpc-js"]
+	"ignoreDependencies": ["@grpc/grpc-js", "@vitest/ui", "chokidar-cli"],
+	"ignoreBinaries": ["chokidar", "vitest"]
 }

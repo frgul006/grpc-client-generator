@@ -3,5 +3,7 @@
 	"entry": ["src/**/*.test.*", "src/index.ts"],
 	"ignoreExportsUsedInFile": { "interface": true, "type": true },
 	"project": ["src/**/*.ts"],
+	"ignoreDependencies": ["grpc-client-generator", "@vitest/ui"],
+	"ignoreBinaries": ["vitest"],
 	"ignore": []
 }
