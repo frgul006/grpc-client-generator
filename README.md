@@ -96,7 +96,7 @@ The `main` branch is protected with the following requirements:
 1. **Fork and Clone**: Fork the repository and clone your fork
 2. **Create Branch**: Create a feature branch from `main`
 3. **Develop**: Make your changes following the coding standards
-4. **Test**: Ensure all CI checks pass locally using `./cli/lab preflight`
+4. **Test**: Ensure all CI checks pass locally using `lab preflight`
 5. **Pull Request**: Create a PR against `main`
 6. **Review**: Wait for required approvals and CI completion
 7. **Merge**: Maintainers will merge once all requirements are met
@@ -106,15 +106,15 @@ The `main` branch is protected with the following requirements:
 All pull requests must pass:
 
 - **Validation Tests**: Run across Node.js 20.x and 22.x
-- **Preflight Checks**: Execute `./cli/lab preflight` successfully
+- **Preflight Checks**: Execute `lab preflight` successfully
 - **Security Scanning**: Pass CodeQL analysis
 - **Dependency Installation**: Complete build and test cycle
 
 ### Development Commands
 
-- `./cli/lab setup`: Install dependencies and setup environment
-- `./cli/lab preflight`: Run all validation checks
-- `./cli/lab publish <library>`: Publish library to local registry
+- `lab setup`: Install dependencies and setup environment
+- `lab preflight`: Run all validation checks
+- `lab publish <library>`: Publish library to local registry
 
 ## Project Structure
 
