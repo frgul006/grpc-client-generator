@@ -354,7 +354,7 @@ handle_preflight_command() {
         local package_name
         package_name=$(basename "$result_file" .success)
         echo "✅ SUCCESS: ${package_name}"
-        ((success_count++))
+        success_count=$((success_count + 1))
     done
     
     # Report failures with logs
@@ -374,7 +374,7 @@ handle_preflight_command() {
             cat "$log_file"
             echo "--------------------------------"
         fi
-        ((failure_count++))
+        failure_count=$((failure_count + 1))
     done
     
     echo
