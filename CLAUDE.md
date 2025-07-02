@@ -7,10 +7,12 @@ Be brutally honest, don't be a yes man. If I am wrong, point it out bluntly. I n
 ## Issue Management Workflow
 
 1. **Check Existing Issues**
+
    - Search GitHub Issues for related work
    - Check migration map in `/docs/issue-migration.md` for historical context
 
 2. **Create New Issues**
+
    - Use appropriate issue template
    - Apply relevant labels (epic, type, status, priority)
    - Link to related issues or PRs
@@ -31,24 +33,28 @@ Be brutally honest, don't be a yes man. If I am wrong, point it out bluntly. I n
 ## Development Workflow: Explore-Plan-Code-Commit-Track
 
 ### 1. Explore
+
 - Check GitHub Issues for related work
-- Review `/docs/issue-migration.md` for historical context
 - Understand the codebase first
 
 ### 2. Plan
+
 - Create or update GitHub Issue with implementation plan
 - Present detailed steps
 - **Wait for user approval before proceeding**
 
 ### 3. Code
+
 - Reference issue number in branch name: `feat/user-auth-123`
 - Execute the approved plan methodically
 
 ### 4. Commit
+
 - Include issue reference: `fixes #123` or `relates to #123`
 - Create PR linked to issue
 
 ### 5. Track
+
 - Update issue status labels
 - Close issue when PR is merged
 
@@ -76,8 +82,9 @@ Be brutally honest, don't be a yes man. If I am wrong, point it out bluntly. I n
   - `@docs/workflows.md` - Development processes
   - `@docs/tool-reference.md` - Zen and Context7 tool descriptions
 
-# important-instruction-reminders
+## Important instruction reminders
+
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+NEVER proactively create documentation files (\*.md) or README files. Only create documentation files if explicitly requested by the User.
