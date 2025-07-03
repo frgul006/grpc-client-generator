@@ -54,3 +54,20 @@ jobs:
             **/npm-debug.log
             **/*.log
           retention-days: 7
+
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [validate]
+    if: always()
+    steps:
+      - name: Check CI Status
+        run: |
+          # Check if all required jobs succeeded
+          if [[ "${{ needs.validate.result }}" == "success" ]]; then
+            echo "✅ All CI checks passed"
+            exit 0
+          else
+            echo "❌ CI checks failed - validate: ${{ needs.validate.result }}"
+            exit 1
+          fi
