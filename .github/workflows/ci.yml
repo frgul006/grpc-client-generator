@@ -36,7 +36,9 @@ jobs:
           sudo apt-get install -y jq protobuf-compiler build-essential python3
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm rebuild
       
       - name: Run preflight checks
         run: ./cli/lab preflight
