@@ -79,7 +79,7 @@ main() {
     # Use noclobber to atomically create lockfile
     if (set -o noclobber; echo "$$" > "$lockfile") 2>/dev/null; then
         # Set up cleanup trap that preserves original exit code
-        trap 'rm -f "$lockfile"' INT TERM EXIT
+        trap "rm -f \"$lockfile\"" INT TERM EXIT
         
         log_info "[Watcher] 📁 Change detected in '$package_name'. Publishing..."
         

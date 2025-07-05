@@ -11,7 +11,7 @@
 		"check:spelling": "cspell \"**\" ",
 		"check:types": "tsc --noEmit",
 		"check:unused": "knip",
-		"dev": "nodemon --watch src --watch package.json --watch package-lock.json --exec \"node --loader ts-node/esm\" src/index.ts",
+		"dev": "nodemon --watch src --watch package.json --exec \"node --loader ts-node/esm\" src/index.ts",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint": "eslint src/**/*.ts",
@@ -22,7 +22,7 @@
 		"verify": "npm run lint && npm run lint:md && npm run format:check && npm run check:types && npm run check:unused && npm run check:spelling && npm run build && npm run test"
 	},
 	"dependencies": {
-		"grpc-client-generator": "workspace:*"
+		"grpc-client-generator": "*"
 	},
 	"devDependencies": {
 		"@eslint-community/eslint-plugin-eslint-comments": "4.5.0",

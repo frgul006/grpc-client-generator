@@ -401,6 +401,49 @@ handle_dev_command() {
     if check_verdaccio_running; then
         switch_to_local_registry
         log_info "🔄 Registry mode: LOCAL (auto-publishing enabled)"
+        
+        # Initial build and publish for all libraries
+        log_info "📦 Building and publishing libraries..."
+        for lib_dir in "$REPO_ROOT/libs"/*; do
+            if [[ -d "$lib_dir" && -f "$lib_dir/package.json" ]]; then
+                local lib_name
+                lib_name=$(basename "$lib_dir")
+                log_info "Building and publishing $lib_name..."
+                
+                # Build and publish (publish script handles building, but we ensure it's built)
+                if "$REPO_ROOT/cli/lab" publish "$lib_name" &>/dev/null; then
+                    log_success "✅ Published $lib_name"
+                else
+                    log_warning "⚠️ Failed to publish $lib_name"
+                fi
+            fi
+        done
+        
+        # Explicitly update all consumer services to use registry versions
+        log_info "🔄 Updating consumer dependencies to use registry versions..."
+        for service_dir in "$REPO_ROOT/services"/*; do
+            if [[ -d "$service_dir" && -f "$service_dir/package.json" ]]; then
+                local service_name
+                service_name=$(basename "$service_dir")
+                log_info "Updating $service_name dependencies..."
+                
+                cd "$service_dir"
+                # Check each library dependency and update to registry version
+                for lib_dir in "$REPO_ROOT/libs"/*; do
+                    if [[ -d "$lib_dir" ]]; then
+                        local lib_name
+                        lib_name=$(basename "$lib_dir")
+                        # Check if this service depends on this library
+                        if grep -q "\"$lib_name\":" package.json 2>/dev/null; then
+                            # Update to latest dev version from registry
+                            npm install "$lib_name@dev" --registry="$VERDACCIO_URL" &>/dev/null || true
+                        fi
+                    fi
+                done
+                cd "$REPO_ROOT"
+                log_success "✅ Updated $service_name"
+            fi
+        done
     else
         log_info "🔄 Registry mode: WORKSPACE (local dependencies only)"
     fi
@@ -478,7 +521,7 @@ handle_dev_command() {
     fi
     
     # Set up signal handling for graceful shutdown
-    local cleanup_done=false
+    cleanup_done=false
     cleanup() {
         if [[ "$cleanup_done" == "true" ]]; then
             return 0
@@ -496,11 +539,65 @@ handle_dev_command() {
             switch_to_default_registry
         fi
         
+        # Restore workspace dependencies in all consumer services
+        log_info "🔄 Restoring workspace dependencies..."
+        local services_updated=false
+        
+        for service_dir in "$REPO_ROOT/services"/*; do
+            if [[ -d "$service_dir" && -f "$service_dir/package.json" ]]; then
+                local service_name
+                service_name=$(basename "$service_dir")
+                local has_lib_deps=false
+                
+                # Check if this service has any library dependencies
+                for lib_dir in "$REPO_ROOT/libs"/*; do
+                    if [[ -d "$lib_dir" ]]; then
+                        local lib_name
+                        lib_name=$(basename "$lib_dir")
+                        if grep -q "\"$lib_name\":" "$service_dir/package.json" 2>/dev/null; then
+                            has_lib_deps=true
+                            # Restore to wildcard version
+                            cd "$service_dir"
+                            sed -i '' "s/\"$lib_name\": \"[^\"]*\"/\"$lib_name\": \"*\"/" package.json
+                            cd "$REPO_ROOT"
+                        fi
+                    fi
+                done
+                
+                if [[ "$has_lib_deps" == "true" ]]; then
+                    services_updated=true
+                    # Remove lockfile entries for this service's registry dependencies
+                    if [[ -f "package-lock.json" ]]; then
+                        for lib_dir in "$REPO_ROOT/libs"/*; do
+                            if [[ -d "$lib_dir" ]]; then
+                                local lib_name
+                                lib_name=$(basename "$lib_dir")
+                                node -e "
+                                    const fs = require('fs');
+                                    const lockfile = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+                                    delete lockfile.packages['services/$service_name/node_modules/$lib_name'];
+                                    fs.writeFileSync('package-lock.json', JSON.stringify(lockfile, null, 2) + '\n');
+                                " 2>/dev/null || true
+                            fi
+                        done
+                    fi
+                    
+                    # Reinstall to restore workspace symlinks
+                    cd "$service_dir"
+                    npm install &>/dev/null || true
+                    cd "$REPO_ROOT"
+                fi
+            fi
+        done
+        
+        if [[ "$services_updated" == "true" ]]; then
+            log_info "✅ Restored workspace dependencies for consumer services"
+        fi
+        
         kill 0 2>/dev/null || true
     }
     trap cleanup SIGINT SIGTERM EXIT
     
-    # Run with concurrently using expert analysis recommendations
     npx concurrently \
         --names "$(IFS=','; echo "${names[*]}")" \
         --prefix-colors "auto" \
