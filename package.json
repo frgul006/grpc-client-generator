@@ -2,12 +2,20 @@
   "name": "grpc-experiment-monorepo",
   "private": true,
   "description": "gRPC experiment monorepo with development orchestration tools",
+  "workspaces": [
+    "libs/*",
+    "apis/*",
+    "services/*"
+  ],
   "devDependencies": {
     "concurrently": "^8.2.2",
     "chokidar-cli": "^3.0.0"
   },
   "scripts": {
-    "dev": "./cli/lab dev"
+    "dev": "./cli/lab dev",
+    "build": "npm run build -ws --if-present",
+    "test": "npm run test -ws --if-present",
+    "verify": "npm run verify -ws --if-present"
   },
   "engines": {
     "node": ">=18.3.0"

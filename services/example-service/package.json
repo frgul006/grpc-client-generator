@@ -21,7 +21,9 @@
 		"test:ui": "vitest --ui",
 		"verify": "npm run lint && npm run lint:md && npm run format:check && npm run check:types && npm run check:unused && npm run check:spelling && npm run build && npm run test"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"grpc-client-generator": "*"
+	},
 	"devDependencies": {
 		"@eslint-community/eslint-plugin-eslint-comments": "4.5.0",
 		"@eslint/js": "9.29.0",

@@ -223,7 +223,7 @@ handle_preflight_command() {
             package_dir=$(dirname "$pkg_json")
             packages_with_verify+=("$package_dir")
         fi
-    done < <(find "$REPO_ROOT" -type f -name "package.json" -not -path "*/node_modules/*" -print0)
+    done < <(find "$REPO_ROOT" -mindepth 2 -type f -name "package.json" -not -path "*/node_modules/*" -print0)
     
     if [[ ${#packages_with_verify[@]} -eq 0 ]]; then
         log_warning "No packages with verify scripts found"
