@@ -37,9 +37,9 @@ jobs:
       
       - name: Install dependencies
         run: |
-          # Remove package-lock.json to force fresh install with Linux bindings
-          rm package-lock.json
+          # Install dependencies normally, then force reinstall oxc-resolver for Linux bindings
           npm install
+          npm install oxc-resolver --force
       
       - name: Run preflight checks
         run: ./cli/lab preflight
