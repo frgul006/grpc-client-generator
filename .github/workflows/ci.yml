@@ -37,9 +37,9 @@ jobs:
       
       - name: Install dependencies
         run: |
-          npm ci
-          # Force reinstall oxc-resolver with Linux bindings
-          cd libs/grpc-client-generator && rm -rf node_modules/@oxc-resolver node_modules/oxc-resolver && npm install
+          # Remove package-lock.json to force fresh install with Linux bindings
+          rm package-lock.json
+          npm install
       
       - name: Run preflight checks
         run: ./cli/lab preflight
