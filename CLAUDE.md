@@ -76,6 +76,7 @@
   - `@docs/coding-standards.md` - Code style and quality requirements
   - `@docs/workflows.md` - Development processes
   - `@docs/tool-reference.md` - Zen and Context7 tool descriptions
+  - `@cli/lib/CLAUDE.md` - CLI command architecture and refactoring patterns
 
 ## Important instruction reminders
 
