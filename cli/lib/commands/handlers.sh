@@ -157,6 +157,62 @@ show_status() {
     fi
     
     echo
+    log_info "🔄 Registry Mode:"
+    
+    # Check current registry configuration
+    local current_registry
+    current_registry=$(npm config get registry)
+    local registry_mode
+    registry_mode=$(get_current_registry_mode)
+    
+    if [[ "$registry_mode" == "local" ]]; then
+        echo "• Active Mode: 🟢 LOCAL REGISTRY ($VERDACCIO_URL)"
+        echo "• Status: Enhanced development mode active"
+        echo "• Auto-Publishing: ✅ Enabled for library changes"
+    else
+        echo "• Active Mode: 🟡 DEFAULT REGISTRY (npmjs.org)"  
+        echo "• Status: Standard workspace mode"
+        echo "• Auto-Publishing: ❌ Disabled (no local registry)"
+    fi
+    
+    echo "• Current Registry: $current_registry"
+    
+    echo
+    log_info "🔧 Development Workflow:"
+    
+    # Check file watcher status
+    if pgrep -f "chokidar.*libs" >/dev/null 2>&1; then
+        echo "• File Watcher: 🟢 Active (monitoring libs/ directory)"
+    else
+        echo "• File Watcher: ⚪ Inactive"
+    fi
+    
+    # Check development servers
+    local dev_processes=0
+    if pgrep -f "npm run dev" >/dev/null 2>&1; then
+        dev_processes=$(pgrep -f "npm run dev" 2>/dev/null | wc -l)
+        dev_processes=${dev_processes:-0}
+    fi
+    if [[ "$dev_processes" -gt 0 ]]; then
+        echo "• Dev Servers: 🟢 Running ($dev_processes processes)"
+    else
+        echo "• Dev Servers: ⚪ Not running"
+    fi
+    
+    # Check workspace dependencies
+    if [[ -f "$REPO_ROOT/services/example-service/package.json" ]]; then
+        local grpc_dep
+        grpc_dep=$(grep -o '"grpc-client-generator": "[^"]*"' "$REPO_ROOT/services/example-service/package.json" | cut -d'"' -f4)
+        if [[ -n "$grpc_dep" ]]; then
+            echo "• Consumer Dependencies: $grpc_dep"
+        else
+            echo "• Consumer Dependencies: ❌ Not found"
+        fi
+    else
+        echo "• Consumer Dependencies: ❌ example-service not found"
+    fi
+    
+    echo
     log_info "📦 Project Status:"
     
     # Check dependencies
@@ -230,6 +286,17 @@ show_status() {
         echo "• Setup appears complete (state file auto-cleaned)"
         echo "• Run 'lab setup --keep-state' to re-create state tracking"
     fi
+}
+
+# Show development mode summary
+show_dev_mode_summary() {
+    echo
+    log_info "📋 Development Mode Summary:"
+    echo "   • Registry: $(get_current_registry_mode | tr '[:lower:]' '[:upper:]')"
+    echo "   • Local Registry: $(check_verdaccio_running && echo "AVAILABLE" || echo "UNAVAILABLE")"
+    echo "   • File Watcher: $([ -d "libs" ] && echo "ENABLED" || echo "DISABLED")"
+    echo "   • Auto-Publishing: $(check_verdaccio_running && echo "ENABLED" || echo "DISABLED")"
+    echo
 }
 
 # Clean up running services
@@ -313,6 +380,74 @@ handle_dev_command() {
         }
     fi
     
+    # =============================================================================
+    # AUTOMATIC REGISTRY MODE SETUP
+    # =============================================================================
+    
+    log_info "🔧 Setting up enhanced local development mode..."
+    
+    # Check if Verdaccio is running, start if needed
+    if ! check_verdaccio_running; then
+        log_info "🚀 Starting local registry (Verdaccio)..."
+        if setup_verdaccio; then
+            log_success "✅ Local registry ready at $VERDACCIO_URL"
+        else
+            log_warning "⚠️  Failed to start local registry, falling back to workspace mode"
+            log_info "💡 File changes will use workspace dependencies only"
+        fi
+    fi
+    
+    # Switch to local registry if Verdaccio is available
+    if check_verdaccio_running; then
+        switch_to_local_registry
+        log_info "🔄 Registry mode: LOCAL (auto-publishing enabled)"
+        
+        # Initial build and publish for all libraries
+        log_info "📦 Building and publishing libraries..."
+        for lib_dir in "$REPO_ROOT/libs"/*; do
+            if [[ -d "$lib_dir" && -f "$lib_dir/package.json" ]]; then
+                local lib_name
+                lib_name=$(basename "$lib_dir")
+                log_info "Building and publishing $lib_name..."
+                
+                # Build and publish (publish script handles building, but we ensure it's built)
+                if "$REPO_ROOT/cli/lab" publish "$lib_name" &>/dev/null; then
+                    log_success "✅ Published $lib_name"
+                else
+                    log_warning "⚠️ Failed to publish $lib_name"
+                fi
+            fi
+        done
+        
+        # Explicitly update all consumer services to use registry versions
+        log_info "🔄 Updating consumer dependencies to use registry versions..."
+        for service_dir in "$REPO_ROOT/services"/*; do
+            if [[ -d "$service_dir" && -f "$service_dir/package.json" ]]; then
+                local service_name
+                service_name=$(basename "$service_dir")
+                log_info "Updating $service_name dependencies..."
+                
+                cd "$service_dir"
+                # Check each library dependency and update to registry version
+                for lib_dir in "$REPO_ROOT/libs"/*; do
+                    if [[ -d "$lib_dir" ]]; then
+                        local lib_name
+                        lib_name=$(basename "$lib_dir")
+                        # Check if this service depends on this library
+                        if grep -q "\"$lib_name\":" package.json 2>/dev/null; then
+                            # Update to latest dev version from registry
+                            npm install "$lib_name@dev" --registry="$VERDACCIO_URL" &>/dev/null || true
+                        fi
+                    fi
+                done
+                cd "$REPO_ROOT"
+                log_success "✅ Updated $service_name"
+            fi
+        done
+    else
+        log_info "🔄 Registry mode: WORKSPACE (local dependencies only)"
+    fi
+    
     # Discover packages with dev scripts
     local packages=()
     for dir in apis libs services; do
@@ -353,6 +488,12 @@ handle_dev_command() {
     
     log_info "📦 Found ${#commands[@]} packages with dev scripts: $(IFS=', '; echo "${names[*]}")"
     
+    # Enhanced startup summary
+    log_info "📋 Development Mode Summary:"
+    log_info "   • Registry: $(get_current_registry_mode | tr '[:lower:]' '[:upper:]')"
+    log_info "   • File Watcher: $([ -d "$REPO_ROOT/libs" ] && echo "ENABLED" || echo "DISABLED")"
+    log_info "   • Auto-Publishing: $(check_verdaccio_running && echo "ENABLED" || echo "DISABLED")"
+    
     # Start file watcher for libraries in background
     local watcher_pid=""
     if [[ -d "$REPO_ROOT/libs" ]]; then
@@ -380,7 +521,7 @@ handle_dev_command() {
     fi
     
     # Set up signal handling for graceful shutdown
-    local cleanup_done=false
+    cleanup_done=false
     cleanup() {
         if [[ "$cleanup_done" == "true" ]]; then
             return 0
@@ -391,11 +532,72 @@ handle_dev_command() {
         if [[ -n "$watcher_pid" ]]; then
             kill "$watcher_pid" 2>/dev/null || true
         fi
+        
+        # Reset npm registry to default
+        if is_local_registry_active; then
+            log_info "🔄 Resetting npm registry to default..."
+            switch_to_default_registry
+        fi
+        
+        # Restore workspace dependencies in all consumer services
+        log_info "🔄 Restoring workspace dependencies..."
+        local services_updated=false
+        
+        for service_dir in "$REPO_ROOT/services"/*; do
+            if [[ -d "$service_dir" && -f "$service_dir/package.json" ]]; then
+                local service_name
+                service_name=$(basename "$service_dir")
+                local has_lib_deps=false
+                
+                # Check if this service has any library dependencies
+                for lib_dir in "$REPO_ROOT/libs"/*; do
+                    if [[ -d "$lib_dir" ]]; then
+                        local lib_name
+                        lib_name=$(basename "$lib_dir")
+                        if grep -q "\"$lib_name\":" "$service_dir/package.json" 2>/dev/null; then
+                            has_lib_deps=true
+                            # Restore to wildcard version
+                            cd "$service_dir"
+                            sed -i '' "s/\"$lib_name\": \"[^\"]*\"/\"$lib_name\": \"*\"/" package.json
+                            cd "$REPO_ROOT"
+                        fi
+                    fi
+                done
+                
+                if [[ "$has_lib_deps" == "true" ]]; then
+                    services_updated=true
+                    # Remove lockfile entries for this service's registry dependencies
+                    if [[ -f "package-lock.json" ]]; then
+                        for lib_dir in "$REPO_ROOT/libs"/*; do
+                            if [[ -d "$lib_dir" ]]; then
+                                local lib_name
+                                lib_name=$(basename "$lib_dir")
+                                node -e "
+                                    const fs = require('fs');
+                                    const lockfile = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+                                    delete lockfile.packages['services/$service_name/node_modules/$lib_name'];
+                                    fs.writeFileSync('package-lock.json', JSON.stringify(lockfile, null, 2) + '\n');
+                                " 2>/dev/null || true
+                            fi
+                        done
+                    fi
+                    
+                    # Reinstall to restore workspace symlinks
+                    cd "$service_dir"
+                    npm install &>/dev/null || true
+                    cd "$REPO_ROOT"
+                fi
+            fi
+        done
+        
+        if [[ "$services_updated" == "true" ]]; then
+            log_info "✅ Restored workspace dependencies for consumer services"
+        fi
+        
         kill 0 2>/dev/null || true
     }
     trap cleanup SIGINT SIGTERM EXIT
     
-    # Run with concurrently using expert analysis recommendations
     npx concurrently \
         --names "$(IFS=','; echo "${names[*]}")" \
         --prefix-colors "auto" \

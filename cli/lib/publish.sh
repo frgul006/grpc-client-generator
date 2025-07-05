@@ -76,7 +76,8 @@ find_dependent_packages() {
 update_package_dependency() {
     local package_path="$1"
     local dependency_name="$2"
-    
+    local dev_version="$3"
+
     log_debug "Updating $dependency_name in $package_path"
     
     # Save current directory
@@ -86,8 +87,11 @@ update_package_dependency() {
     # Change to package directory and run update
     cd "$package_path"
     
-    # Use npm update with the local registry
-    npm update "$dependency_name" --registry="$VERDACCIO_URL" &>/dev/null
+    # Force install from registry (not workspace) by replacing dependency in one operation
+    # This is necessary because npm workspaces with wildcard dependencies prefer symlinks
+    log_debug "Replacing workspace dependency with registry version for $dependency_name"
+    
+    npm install "$dependency_name@$dev_version" --registry="$VERDACCIO_URL" &>/dev/null || true
     
     # Return to original directory
     cd "$current_dir"
@@ -154,8 +158,8 @@ publish_package() {
         fi
     fi
     
-    log_info "📦 Publishing package: $package_name"
-    log_info "📁 Path: $package_path"
+    log_info "Publishing package: $package_name"
+    log_info "Path: $package_path"
     
     # Check if Verdaccio is running
     if ! check_verdaccio_running; then
@@ -170,12 +174,12 @@ publish_package() {
         return 1
     fi
     
-    log_info "💾 Current version: $original_version"
+    log_info "Current version: $original_version"
     
     # Generate and set dev version
     local dev_version
     dev_version=$(generate_dev_version)
-    log_info "🔄 Temporary dev version: $dev_version"
+    log_info "Temporary dev version: $dev_version"
     
     # Change to package directory for all operations
     cd "$package_path"
@@ -188,7 +192,7 @@ publish_package() {
     
     # Build the package if build script exists
     if npm run --silent 2>/dev/null | grep -q "^  build$"; then
-        log_info "🔨 Building package..."
+        log_info "Building package..."
         if ! npm run build; then
             log_error "Build failed"
             restore_package_version "$package_path" "$original_version"
@@ -197,21 +201,21 @@ publish_package() {
     fi
     
     # Publish to local registry
-    log_info "📤 Publishing to local registry..."
+    log_info "Publishing to local registry..."
     if ! npm publish --registry="$VERDACCIO_URL" --tag dev --force; then
         log_error "Failed to publish to local registry"
         restore_package_version "$package_path" "$original_version"
         return 1
     fi
     
-    log_success "✅ Published $package_name@$dev_version to local registry"
+    log_success "Published $package_name@$dev_version to local registry"
     
     # Restore original version
     restore_package_version "$package_path" "$original_version"
-    log_info "🔄 Restored version to $original_version"
+    log_info "Restored version to $original_version"
     
     # Find and update dependent packages
-    log_info "🔍 Searching for dependent packages..."
+    log_info "Searching for dependent packages..."
     local dependent_packages=()
     while IFS= read -r dep; do
         dependent_packages+=("$dep")
@@ -225,16 +229,16 @@ publish_package() {
         for dep_path in "${dependent_packages[@]}"; do
             local dep_name
             dep_name=$(basename "$dep_path")
-            log_info "📦 Updating $dep_name..."
+            log_info "Updating $dep_name..."
             
-            if update_package_dependency "$dep_path" "$package_name"; then
-                log_success "✅ Updated $dep_name"
+            if update_package_dependency "$dep_path" "$package_name" "$dev_version"; then
+                log_success "Updated $dep_name"
             else
-                log_warning "⚠️  Failed to update $dep_name"
+                log_warning "Failed to update $dep_name"
             fi
         done
     fi
     
-    log_success "🎉 Package publish completed!"
-    log_info "💡 The package is available at $VERDACCIO_URL"
+    log_success "Package publish completed!"
+    log_info "The package is available at $VERDACCIO_URL"
 }
