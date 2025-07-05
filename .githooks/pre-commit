@@ -1,0 +1,143 @@
+#!/bin/bash
+set -Eeuo pipefail
+
+# =============================================================================
+# PRE-COMMIT HOOK - GIT SAFETY MECHANISMS
+# =============================================================================
+# Prevents accidental commits of registry state from 'lab dev' mode
+# 
+# This hook checks STAGED files only and blocks commits when:
+# 1. Staged package.json files contain hardcoded library versions (should be "*")
+# 2. Staged package-lock.json contains verdaccio registry references
+#
+# Part of Issue #57 Phase 3: Essential Git Safety Mechanisms
+
+# Determine repository root
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+log_error() {
+    echo "❌ $1" >&2
+}
+
+log_info() {
+    echo "💡 $1" >&2
+}
+
+log_success() {
+    echo "✅ $1" >&2
+}
+
+# =============================================================================
+# STAGED FILE ANALYSIS FUNCTIONS
+# =============================================================================
+
+# Check if staged files contain registry state that should not be committed
+check_staged_registry_state() {
+    local blocked=false
+    
+    # Get list of staged files
+    local staged_files
+    staged_files=$(git diff --cached --name-only)
+    
+    # Get list of all library names from libs directory
+    local lib_names=()
+    if [[ -d "$REPO_ROOT/libs" ]]; then
+        for lib_dir in "$REPO_ROOT/libs"/*; do
+            if [[ -d "$lib_dir" && -f "$lib_dir/package.json" ]]; then
+                lib_names+=($(basename "$lib_dir"))
+            fi
+        done
+    fi
+    
+    # If no libraries found, skip library-specific checks
+    if [[ ${#lib_names[@]} -eq 0 ]]; then
+        log_info "No libraries found in libs/ directory, skipping library dependency checks"
+    else
+        # Check staged package.json files for hardcoded library versions
+        for file in $staged_files; do
+            if [[ "$file" == */package.json && "$file" != node_modules/* ]]; then
+                # Check if file exists in staging area (might be deleted)
+                if git ls-files --stage | grep -q "$file"; then
+                    for lib_name in "${lib_names[@]}"; do
+                        # Use git show to read staged content
+                        # Look for any version that's not exactly "*" (registry versions start with ^, ~, or numbers)
+                        if git show ":$file" 2>/dev/null | grep "\"$lib_name\":" | grep -v "\"$lib_name\": \"\\*\"" | grep -q .; then
+                            log_error "COMMIT BLOCKED: Staged $file contains hardcoded $lib_name version"
+                            log_info "This should be '*' in workspace mode"
+                            local hardcoded_version
+                            hardcoded_version=$(git show ":$file" 2>/dev/null | grep "\"$lib_name\":" | head -n1 | sed 's/^[[:space:]]*//')
+                            log_info "Found: $hardcoded_version"
+                            log_info "Expected: \"$lib_name\": \"*\""
+                            blocked=true
+                        fi
+                    done
+                fi
+            fi
+        done
+    fi
+    
+    # Check staged package-lock.json for verdaccio references
+    if echo "$staged_files" | grep -q "^package-lock\.json$"; then
+        # Check if file exists in staging area (might be deleted)
+        if git ls-files --stage | grep -q "^package-lock\.json$"; then
+            if git show ":package-lock.json" 2>/dev/null | grep -q "localhost:4873"; then
+                log_error "COMMIT BLOCKED: Staged package-lock.json references local registry"
+                log_info "Stop 'lab dev' to restore workspace state before committing lockfile changes"
+                blocked=true
+            fi
+        fi
+    fi
+    
+    # Check for any verdaccio references in staged package-lock.json files in subdirectories
+    for file in $staged_files; do
+        if [[ "$file" == */package-lock.json && "$file" != node_modules/* ]]; then
+            # Check if file exists in staging area
+            if git ls-files --stage | grep -q "$file"; then
+                if git show ":$file" 2>/dev/null | grep -q "localhost:4873"; then
+                    log_error "COMMIT BLOCKED: Staged $file references local registry"
+                    log_info "Stop 'lab dev' to restore workspace state before committing lockfile changes"
+                    blocked=true
+                fi
+            fi
+        fi
+    done
+    
+    if [[ "$blocked" == "true" ]]; then
+        echo >&2
+        log_info "Registry state detected in staged files!"
+        log_info "This usually happens when 'lab dev' is running or was recently stopped."
+        echo >&2
+        log_info "To fix this:"
+        log_info "1. Stop 'lab dev' if it's running (Ctrl+C)"
+        log_info "2. Wait for automatic cleanup to restore workspace state"
+        log_info "3. Check 'lab status' to verify workspace mode is active"
+        log_info "4. Re-stage your intended changes: git add <files>"
+        log_info "5. Commit again"
+        echo >&2
+        log_info "💡 You can still commit source code changes while 'lab dev' is running"
+        log_info "   Just avoid staging package.json or package-lock.json changes"
+        echo >&2
+        return 1
+    else
+        log_success "Staged changes are safe - no registry state detected"
+        return 0
+    fi
+}
+
+# =============================================================================
+# MAIN EXECUTION
+# =============================================================================
+
+# Only run checks if there are staged changes
+if ! git diff --cached --quiet; then
+    check_staged_registry_state
+else
+    log_info "No staged changes detected"
+fi
+
+# If we reach here, the commit is safe
+exit 0

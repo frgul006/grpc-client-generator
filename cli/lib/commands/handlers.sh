@@ -178,6 +178,48 @@ show_status() {
     echo "• Current Registry: $current_registry"
     
     echo
+    log_info "🔒 Git Safety Status:"
+    
+    # Check if lab dev is currently running
+    if pgrep -f "lab dev" > /dev/null; then
+        echo "• lab dev Status: 🔄 RUNNING (registry mode active)"
+        echo "• Working Directory: 📝 Uses registry versions for development"
+        echo "• Commit Safety: ✅ Source code and documentation changes are safe to commit"
+        echo "• Dependency Files: ⚠️  Avoid staging package.json or package-lock.json changes"
+        
+        # Check if any dependency files have uncommitted changes
+        if command -v git >/dev/null 2>&1 && [[ -d "$REPO_ROOT/.git" ]]; then
+            if git diff --name-only 2>/dev/null | grep -E "(package\.json|package-lock\.json)" > /dev/null; then
+                echo "• Uncommitted Changes: 🚨 WARNING - Dependency files have uncommitted changes"
+                echo "  💡 Stop 'lab dev' before committing dependency changes to avoid registry state"
+            else
+                echo "• Uncommitted Changes: ✅ No dependency file changes detected"
+            fi
+        else
+            echo "• Git Repository: ❌ Not available or not a git repository"
+        fi
+        
+        # Check if pre-commit hook is installed
+        if [[ -f "$REPO_ROOT/.git/hooks/pre-commit" && -x "$REPO_ROOT/.git/hooks/pre-commit" ]]; then
+            echo "• Pre-commit Hook: ✅ Installed (will block registry state commits)"
+        else
+            echo "• Pre-commit Hook: ❌ Missing or not executable"
+        fi
+    else
+        echo "• lab dev Status: ✅ STOPPED (workspace mode active)"
+        echo "• Working Directory: 🏠 Uses workspace dependencies"
+        echo "• Commit Safety: ✅ All commits safe - no registry state present"
+        echo "• Dependency Files: ✅ Safe to commit package.json and package-lock.json"
+        
+        # Still check pre-commit hook status
+        if [[ -f "$REPO_ROOT/.git/hooks/pre-commit" && -x "$REPO_ROOT/.git/hooks/pre-commit" ]]; then
+            echo "• Pre-commit Hook: ✅ Installed and ready"
+        else
+            echo "• Pre-commit Hook: ❌ Missing or not executable"
+        fi
+    fi
+    
+    echo
     log_info "🔧 Development Workflow:"
     
     # Check file watcher status

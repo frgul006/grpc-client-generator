@@ -103,6 +103,7 @@ run_setup() {
     # Phase 5: Environment Configuration
     log_info "Phase 5: Environment Configuration"
     run_step "DIRENV_SETUP" setup_direnv_environment
+    run_step "GIT_HOOKS_SETUP" setup_git_hooks
     
     # Phase 6: Testing and Validation
     log_info "Phase 6: Testing and Validation"

@@ -166,3 +166,50 @@ validate_docker() {
     log_success "Docker environment is ready"
     return 0
 }
+
+# Install and configure Git hooks for repository safety
+setup_git_hooks() {
+    log_debug "Setting up Git hooks for registry safety..."
+    
+    # Check if we're in a git repository
+    if ! git rev-parse --git-dir &>/dev/null; then
+        log_warning "Not in a Git repository, skipping Git hooks setup"
+        return 0
+    fi
+    
+    local hooks_source_dir="$REPO_ROOT/.githooks"
+    local hooks_target_dir="$REPO_ROOT/.git/hooks"
+    
+    # Check if .githooks directory exists
+    if [ ! -d "$hooks_source_dir" ]; then
+        log_warning "No .githooks directory found, skipping Git hooks setup"
+        return 0
+    fi
+    
+    # Ensure target directory exists
+    mkdir -p "$hooks_target_dir"
+    
+    # Install hooks from .githooks/ directory
+    local hooks_installed=0
+    for hook_file in "$hooks_source_dir"/*; do
+        if [[ -f "$hook_file" && "$(basename "$hook_file")" != "install.sh" ]]; then
+            local hook_name=$(basename "$hook_file")
+            log_debug "Installing Git hook: $hook_name"
+            
+            # Copy and make executable
+            cp "$hook_file" "$hooks_target_dir/$hook_name"
+            chmod +x "$hooks_target_dir/$hook_name"
+            
+            hooks_installed=$((hooks_installed + 1))
+        fi
+    done
+    
+    if [ $hooks_installed -gt 0 ]; then
+        log_success "Git hooks installed ($hooks_installed hook(s))"
+        log_info "💡 Pre-commit hook will prevent accidental registry state commits"
+    else
+        log_info "No Git hooks found to install"
+    fi
+    
+    return 0
+}

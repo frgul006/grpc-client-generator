@@ -75,24 +75,17 @@ install_dependencies() {
         return 1
     fi
     
-    # Change to API directory and install dependencies
+    # Install dependencies for all workspaces from root
     (
-        cd "$api_dir" || exit 1
+        cd "$REPO_ROOT" || exit 1
         
-        # Configure npm to use Verdaccio registry
-        npm config set registry http://localhost:4873
-        
-        # Install dependencies with retry
+        # In workspace mode, install all dependencies from root
+        # This installs dependencies for all workspace packages automatically
         if retry_with_backoff $MAX_RETRY_ATTEMPTS $BASE_RETRY_DELAY npm install; then
-            log_success "Dependencies installed successfully"
-            
-            # Reset npm registry to default
-            npm config set registry https://registry.npmjs.org/
+            log_success "Dependencies installed successfully for all workspaces"
             return 0
         else
-            log_error "Failed to install dependencies"
-            # Reset npm registry to default
-            npm config set registry https://registry.npmjs.org/
+            log_error "Failed to install workspace dependencies"
             return 1
         fi
     )
