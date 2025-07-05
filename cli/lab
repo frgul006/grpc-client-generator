@@ -33,7 +33,7 @@ source_module() {
 source_module "common.sh"    # Utilities, logging, repo detection
 source_module "state.sh"     # State management, error recovery  
 source_module "help.sh"      # Help system and documentation
-source_module "preflight.sh" # Preflight command for parallel verification
+source_module "preflight/index.sh" # Preflight command for parallel verification
 source_module "commands.sh"  # Command parsing and handlers
 source_module "setup.sh"     # Setup operations and validation
 source_module "publish.sh"   # Package publishing to local registry
