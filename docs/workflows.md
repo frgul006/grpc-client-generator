@@ -22,6 +22,7 @@ Create an issue ONLY if the improvement:
 ### Issue Templates
 
 The repository includes structured templates for:
+
 - **Development Tickets**: For features, bugs, and improvements
 - **RFCs**: For architectural decisions and major changes
 
@@ -37,4 +38,3 @@ The repository includes structured templates for:
 - Use the GitHub web interface or CLI for all issue operations
 - Follow the label conventions defined in CLAUDE.md
 - Issues are automatically closed when linked PRs are merged
-- For historical reference, see `/docs/issue-migration.md`
