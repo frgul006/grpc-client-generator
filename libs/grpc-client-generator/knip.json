@@ -3,6 +3,24 @@
 	"entry": ["src/**/*.test.*"],
 	"ignoreExportsUsedInFile": { "interface": true, "type": true },
 	"project": ["src/**/*.ts"],
-	"ignoreDependencies": ["@grpc/grpc-js", "@vitest/ui", "chokidar-cli"],
-	"ignoreBinaries": ["chokidar", "vitest"]
+	"ignoreDependencies": [
+		"@grpc/grpc-js", 
+		"@vitest/ui", 
+		"chokidar-cli",
+		"cspell",
+		"husky",
+		"lint-staged", 
+		"markdownlint-cli",
+		"release-it"
+	],
+	"ignoreBinaries": [
+		"chokidar", 
+		"vitest",
+		"lint-staged",
+		"tsup",
+		"cspell",
+		"knip",
+		"markdownlint",
+		"husky"
+	]
 }
