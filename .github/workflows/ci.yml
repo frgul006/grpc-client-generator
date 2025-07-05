@@ -42,6 +42,9 @@ jobs:
           rm package-lock.json
           npm install
       
+      - name: Security audit
+        run: npm audit --audit-level=moderate
+      
       - name: Run preflight checks
         run: ./cli/lab preflight
         env:
