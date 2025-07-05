@@ -157,6 +157,62 @@ show_status() {
     fi
     
     echo
+    log_info "🔄 Registry Mode:"
+    
+    # Check current registry configuration
+    local current_registry
+    current_registry=$(npm config get registry)
+    local registry_mode
+    registry_mode=$(get_current_registry_mode)
+    
+    if [[ "$registry_mode" == "local" ]]; then
+        echo "• Active Mode: 🟢 LOCAL REGISTRY ($VERDACCIO_URL)"
+        echo "• Status: Enhanced development mode active"
+        echo "• Auto-Publishing: ✅ Enabled for library changes"
+    else
+        echo "• Active Mode: 🟡 DEFAULT REGISTRY (npmjs.org)"  
+        echo "• Status: Standard workspace mode"
+        echo "• Auto-Publishing: ❌ Disabled (no local registry)"
+    fi
+    
+    echo "• Current Registry: $current_registry"
+    
+    echo
+    log_info "🔧 Development Workflow:"
+    
+    # Check file watcher status
+    if pgrep -f "chokidar.*libs" >/dev/null 2>&1; then
+        echo "• File Watcher: 🟢 Active (monitoring libs/ directory)"
+    else
+        echo "• File Watcher: ⚪ Inactive"
+    fi
+    
+    # Check development servers
+    local dev_processes=0
+    if pgrep -f "npm run dev" >/dev/null 2>&1; then
+        dev_processes=$(pgrep -f "npm run dev" 2>/dev/null | wc -l)
+        dev_processes=${dev_processes:-0}
+    fi
+    if [[ "$dev_processes" -gt 0 ]]; then
+        echo "• Dev Servers: 🟢 Running ($dev_processes processes)"
+    else
+        echo "• Dev Servers: ⚪ Not running"
+    fi
+    
+    # Check workspace dependencies
+    if [[ -f "$REPO_ROOT/services/example-service/package.json" ]]; then
+        local grpc_dep
+        grpc_dep=$(grep -o '"grpc-client-generator": "[^"]*"' "$REPO_ROOT/services/example-service/package.json" | cut -d'"' -f4)
+        if [[ -n "$grpc_dep" ]]; then
+            echo "• Consumer Dependencies: $grpc_dep"
+        else
+            echo "• Consumer Dependencies: ❌ Not found"
+        fi
+    else
+        echo "• Consumer Dependencies: ❌ example-service not found"
+    fi
+    
+    echo
     log_info "📦 Project Status:"
     
     # Check dependencies
@@ -230,6 +286,17 @@ show_status() {
         echo "• Setup appears complete (state file auto-cleaned)"
         echo "• Run 'lab setup --keep-state' to re-create state tracking"
     fi
+}
+
+# Show development mode summary
+show_dev_mode_summary() {
+    echo
+    log_info "📋 Development Mode Summary:"
+    echo "   • Registry: $(get_current_registry_mode | tr '[:lower:]' '[:upper:]')"
+    echo "   • Local Registry: $(check_verdaccio_running && echo "AVAILABLE" || echo "UNAVAILABLE")"
+    echo "   • File Watcher: $([ -d "libs" ] && echo "ENABLED" || echo "DISABLED")"
+    echo "   • Auto-Publishing: $(check_verdaccio_running && echo "ENABLED" || echo "DISABLED")"
+    echo
 }
 
 # Clean up running services
@@ -313,6 +380,31 @@ handle_dev_command() {
         }
     fi
     
+    # =============================================================================
+    # AUTOMATIC REGISTRY MODE SETUP
+    # =============================================================================
+    
+    log_info "🔧 Setting up enhanced local development mode..."
+    
+    # Check if Verdaccio is running, start if needed
+    if ! check_verdaccio_running; then
+        log_info "🚀 Starting local registry (Verdaccio)..."
+        if setup_verdaccio; then
+            log_success "✅ Local registry ready at $VERDACCIO_URL"
+        else
+            log_warning "⚠️  Failed to start local registry, falling back to workspace mode"
+            log_info "💡 File changes will use workspace dependencies only"
+        fi
+    fi
+    
+    # Switch to local registry if Verdaccio is available
+    if check_verdaccio_running; then
+        switch_to_local_registry
+        log_info "🔄 Registry mode: LOCAL (auto-publishing enabled)"
+    else
+        log_info "🔄 Registry mode: WORKSPACE (local dependencies only)"
+    fi
+    
     # Discover packages with dev scripts
     local packages=()
     for dir in apis libs services; do
@@ -353,6 +445,12 @@ handle_dev_command() {
     
     log_info "📦 Found ${#commands[@]} packages with dev scripts: $(IFS=', '; echo "${names[*]}")"
     
+    # Enhanced startup summary
+    log_info "📋 Development Mode Summary:"
+    log_info "   • Registry: $(get_current_registry_mode | tr '[:lower:]' '[:upper:]')"
+    log_info "   • File Watcher: $([ -d "$REPO_ROOT/libs" ] && echo "ENABLED" || echo "DISABLED")"
+    log_info "   • Auto-Publishing: $(check_verdaccio_running && echo "ENABLED" || echo "DISABLED")"
+    
     # Start file watcher for libraries in background
     local watcher_pid=""
     if [[ -d "$REPO_ROOT/libs" ]]; then
@@ -391,6 +489,13 @@ handle_dev_command() {
         if [[ -n "$watcher_pid" ]]; then
             kill "$watcher_pid" 2>/dev/null || true
         fi
+        
+        # Reset npm registry to default
+        if is_local_registry_active; then
+            log_info "🔄 Resetting npm registry to default..."
+            switch_to_default_registry
+        fi
+        
         kill 0 2>/dev/null || true
     }
     trap cleanup SIGINT SIGTERM EXIT

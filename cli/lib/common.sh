@@ -75,3 +75,38 @@ check_verdaccio_running() {
     
     return 1
 }
+
+# =============================================================================
+# REGISTRY MANAGEMENT FUNCTIONS
+# =============================================================================
+
+# Switch to local Verdaccio registry
+switch_to_local_registry() {
+    log_debug "Switching npm registry to local Verdaccio..."
+    npm config set registry "$VERDACCIO_URL"
+    log_info "📦 Registry switched to local mode: $VERDACCIO_URL"
+}
+
+# Switch back to default npm registry  
+switch_to_default_registry() {
+    log_debug "Switching npm registry to default..."
+    npm config set registry https://registry.npmjs.org/
+    log_info "📦 Registry switched to default mode"
+}
+
+# Get current registry mode
+get_current_registry_mode() {
+    local current_registry
+    current_registry=$(npm config get registry)
+    
+    if [[ "$current_registry" == *"localhost:4873"* ]]; then
+        echo "local"
+    else
+        echo "default"
+    fi
+}
+
+# Check if local registry is active
+is_local_registry_active() {
+    [[ "$(get_current_registry_mode)" == "local" ]]
+}
