@@ -1,15 +1,10 @@
 # CLAUDE.md
 
-## Core Behavior
-
-Be brutally honest, don't be a yes man. If I am wrong, point it out bluntly. I need honest feedback on my code. Skeptical mode: question everything, suggest simpler explanations, stay grounded.
-
 ## Issue Management Workflow
 
 1. **Check Existing Issues**
 
    - Search GitHub Issues for related work
-   - Check migration map in `/docs/issue-migration.md` for historical context
 
 2. **Create New Issues**
 
@@ -70,7 +65,7 @@ Be brutally honest, don't be a yes man. If I am wrong, point it out bluntly. I n
 
 - `lab preflight`: Run verification across all packages
 - `lab setup`: Install dependencies and setup environment
-- `lab publish <library>`: Publish library to local registry
+- `lab dev`: Run everything locally in dev mode
 
 ## Essential Rules
 
