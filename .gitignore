@@ -58,3 +58,6 @@ verdaccio-htpasswd
 
 # requirements
 requirements/**
+# Backup files from refactoring
+cli/lib/preflight-old/
+cli/lib/preflight.sh.backup
